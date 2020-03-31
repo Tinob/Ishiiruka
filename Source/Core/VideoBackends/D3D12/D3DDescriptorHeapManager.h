@@ -107,6 +107,7 @@ public:
     SamplerState desc5;
     SamplerState desc6;
     SamplerState desc7;
+    SamplerState desc8;
   };
 
   D3D12_GPU_DESCRIPTOR_HANDLE GetHandleForSamplerGroup(SamplerState* sampler_state, unsigned int num_sampler_samples);

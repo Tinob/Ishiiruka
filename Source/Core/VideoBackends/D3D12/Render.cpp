@@ -89,7 +89,7 @@ typedef struct _Nv_Stereo_Image_Header
 // GX pipeline state
 struct GXPipelineState
 {
-  std::array<SamplerState, 8> samplers;
+  std::array<SamplerState, 9> samplers;
   BlendingState blend;
   DepthState zmode;
   RasterizationState raster;

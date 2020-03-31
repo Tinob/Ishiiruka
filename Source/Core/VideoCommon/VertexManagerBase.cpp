@@ -155,7 +155,8 @@ static void SetSamplerState(u32 index, bool custom_tex, bool has_arbitrary_mips,
   {
     state.min_filter = SamplerState::Filter::Linear;
     state.mag_filter = SamplerState::Filter::Linear;
-    state.mipmap_filter = SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0) ?
+    state.mipmap_filter =
+        mip_maps_enabled ?
       SamplerState::Filter::Linear :
       SamplerState::Filter::Point;
   }
@@ -184,7 +185,7 @@ static void SetSamplerState(u32 index, bool custom_tex, bool has_arbitrary_mips,
     {
       state.min_filter = SamplerState::Filter::Linear;
       state.mag_filter = SamplerState::Filter::Linear;
-      if (SamplerCommon::AreBpTexMode0MipmapsEnabled(tm0))
+      if (mip_maps_enabled)
         state.mipmap_filter = SamplerState::Filter::Linear;
     }
     state.anisotropic_filtering = 1;
@@ -288,6 +289,15 @@ void VertexManagerBase::DoFlush()
         else
           ERROR_LOG(VIDEO, "error loading texture");
       }
+    }
+    if (g_ActiveConfig.bForcePhongShading)
+    {
+      SamplerState state = {};
+      state.min_filter = SamplerState::Filter::Linear;
+      state.mag_filter = SamplerState::Filter::Linear;
+      state.mipmap_filter = SamplerState::Filter::Linear;
+      state.max_lod = 255;
+      g_renderer->SetSamplerState(8, state);
     }
     if (g_ActiveConfig.HiresMaterialMapsEnabled())
     {

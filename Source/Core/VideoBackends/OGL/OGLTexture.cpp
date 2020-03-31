@@ -131,7 +131,7 @@ void OGLTexture::SetFormat()
     gl_type = GL_FLOAT;
     compressed = false;
     break;
-  default:  
+  default:
     break;
   }
   if (compressed && m_config.rendertarget)
@@ -149,14 +149,23 @@ OGLTexture::OGLTexture(const TextureConfig& tex_config) : HostTexture(tex_config
   glGenTextures(1, &m_texId);
 
   glActiveTexture(GL_TEXTURE9);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, m_texId);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, m_config.levels - 1);
+  glBindTexture(tex_config.enviroment ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D_ARRAY, m_texId);
+  glTexParameteri(tex_config.enviroment ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D_ARRAY,
+                  GL_TEXTURE_MAX_LEVEL, m_config.levels - 1);
   SetFormat();
 
   if (g_ogl_config.bSupportsTextureStorage)
   {
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, m_config.levels, gl_siformat, m_config.width, m_config.height,
-      m_config.layers);
+    if (tex_config.enviroment)
+    {
+      glTexStorage2D(GL_TEXTURE_CUBE_MAP, m_config.levels, gl_siformat, m_config.width,
+                     m_config.height);
+    }
+    else
+    {
+      glTexStorage3D(GL_TEXTURE_2D_ARRAY, m_config.levels, gl_siformat, m_config.width,
+                     m_config.height, m_config.layers);
+    }
   }
 
   if (m_config.rendertarget)
@@ -165,15 +174,17 @@ OGLTexture::OGLTexture(const TextureConfig& tex_config) : HostTexture(tex_config
     {
       for (u32 level = 0; level < m_config.levels; level++)
       {
-        glTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_format,
-          std::max(m_config.width >> level, 1u),
-          std::max(m_config.height >> level, 1u),
-          m_config.layers, 0, gl_iformat, gl_type, nullptr);
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_format, std::max(m_config.width >> level, 1u),
+                     std::max(m_config.height >> level, 1u), m_config.layers, 0, gl_iformat,
+                     gl_type, nullptr);
       }
     }
     glGenFramebuffers(1, &m_framebuffer);
     FramebufferManager::SetFramebuffer(m_framebuffer);
-    FramebufferManager::FramebufferTexture(GL_FRAMEBUFFER, (gl_iformat == GL_DEPTH_COMPONENT) ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_ARRAY, m_texId, 0);
+    FramebufferManager::FramebufferTexture(
+        GL_FRAMEBUFFER,
+        (gl_iformat == GL_DEPTH_COMPONENT) ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0,
+        GL_TEXTURE_2D_ARRAY, m_texId, 0);
   }
   SetStage();
 }
@@ -211,7 +222,7 @@ void OGLTexture::Bind(u32 stage)
   if (s_Textures[stage] != m_texId || !g_ActiveConfig.backend_info.bSupportsBindingLayout)
   {
     glActiveTexture(GL_TEXTURE0 + stage);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, m_texId);
+    glBindTexture(m_config.enviroment ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D_ARRAY, m_texId);
     s_Textures[stage] = m_texId;
   }
 }
@@ -242,17 +253,16 @@ bool OGLTexture::Save(const std::string& filename, u32 level)
 }
 
 void OGLTexture::CopyRectangleFromTexture(const HostTexture* source,
-  const MathUtil::Rectangle<int>& srcrect,
-  const MathUtil::Rectangle<int>& dstrect)
+                                          const MathUtil::Rectangle<int>& srcrect,
+                                          const MathUtil::Rectangle<int>& dstrect)
 {
   const OGLTexture* srcentry = static_cast<const OGLTexture*>(source);
-  if (this->gl_format == srcentry->gl_format
-    && srcrect.GetWidth() == dstrect.GetWidth() && srcrect.GetHeight() == dstrect.GetHeight() &&
-    g_ogl_config.bSupportsCopySubImage)
+  if (this->gl_format == srcentry->gl_format && srcrect.GetWidth() == dstrect.GetWidth() &&
+      srcrect.GetHeight() == dstrect.GetHeight() && g_ogl_config.bSupportsCopySubImage)
   {
     glCopyImageSubData(srcentry->m_texId, GL_TEXTURE_2D_ARRAY, 0, srcrect.left, srcrect.top, 0,
-      m_texId, GL_TEXTURE_2D_ARRAY, 0, dstrect.left, dstrect.top, 0,
-      dstrect.GetWidth(), dstrect.GetHeight(), srcentry->m_config.layers);
+                       m_texId, GL_TEXTURE_2D_ARRAY, 0, dstrect.left, dstrect.top, 0,
+                       dstrect.GetWidth(), dstrect.GetHeight(), srcentry->m_config.layers);
     return;
   }
   else if (!m_framebuffer)
@@ -261,7 +271,7 @@ void OGLTexture::CopyRectangleFromTexture(const HostTexture* source,
     glGenFramebuffers(1, &m_framebuffer);
     FramebufferManager::SetFramebuffer(m_framebuffer);
     FramebufferManager::FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-      GL_TEXTURE_2D_ARRAY, m_texId, 0);
+                                           GL_TEXTURE_2D_ARRAY, m_texId, 0);
   }
   g_renderer->ResetAPIState();
   FramebufferManager::SetFramebuffer(m_framebuffer);
@@ -270,18 +280,19 @@ void OGLTexture::CopyRectangleFromTexture(const HostTexture* source,
   g_sampler_cache->BindLinearSampler(g_ActiveConfig.backend_info.bSupportsBindingLayout ? 9 : 0);
   glViewport(dstrect.left, dstrect.top, dstrect.GetWidth(), dstrect.GetHeight());
   static_cast<OGL::TextureCache*>(g_texture_cache.get())->GetColorCopyProgram().Bind();
-  glUniform4f(static_cast<OGL::TextureCache*>(g_texture_cache.get())->GetColorCopyPositionUniform(), float(srcrect.left),
-    float(srcrect.top), float(srcrect.GetWidth()), float(srcrect.GetHeight()));
+  glUniform4f(static_cast<OGL::TextureCache*>(g_texture_cache.get())->GetColorCopyPositionUniform(),
+              float(srcrect.left), float(srcrect.top), float(srcrect.GetWidth()),
+              float(srcrect.GetHeight()));
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   FramebufferManager::SetFramebuffer(0);
   g_renderer->RestoreAPIState();
 }
 
-void OGLTexture::Load(const u8* src, u32 width, u32 height,
-  u32 expanded_width, u32 level, u32 layer)
+void OGLTexture::Load(const u8* src, u32 width, u32 height, u32 expanded_width, u32 level,
+                      u32 layer)
 {
   glActiveTexture(GL_TEXTURE9);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, m_texId);
+  glBindTexture(m_config.enviroment ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D_ARRAY, m_texId);
 
   u32 blocksize = (m_config.pcformat == PC_TEX_FMT_DXT1) ? 8u : 16u;
   switch (m_config.pcformat)
@@ -289,8 +300,7 @@ void OGLTexture::Load(const u8* src, u32 width, u32 height,
   case PC_TEX_FMT_DXT1:
   case PC_TEX_FMT_DXT3:
   case PC_TEX_FMT_DXT5:
-  case PC_TEX_FMT_BPTC:
-  {
+  case PC_TEX_FMT_BPTC: {
     if (expanded_width != width)
     {
       glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -300,16 +310,36 @@ void OGLTexture::Load(const u8* src, u32 width, u32 height,
       glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, blocksize);
       glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
     }
-    if (g_ogl_config.bSupportsTextureStorage)
+    if (m_config.enviroment)
     {
-      glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, layer,
-        width, height, 1, gl_format, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
+      if (g_ogl_config.bSupportsTextureStorage)
+      {
+        glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, level, 0, 0, width,
+                                  height, gl_format,
+                                  ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
+      }
+      else
+      {
+        glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, level, gl_iformat, width,
+                               height, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize,
+                               src);
+      }
     }
     else
     {
-      glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_format,
-        width, height, 1, 0, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
+      if (g_ogl_config.bSupportsTextureStorage)
+      {
+        glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, layer, width, height, 1,
+                                  gl_format, ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize,
+                                  src);
+      }
+      else
+      {
+        glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_format, width, height, 1, 0,
+                               ((width + 3) >> 2) * ((height + 3) >> 2) * blocksize, src);
+      }
     }
+
     if (expanded_width != width)
     {
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -320,19 +350,34 @@ void OGLTexture::Load(const u8* src, u32 width, u32 height,
     }
   }
   break;
-  default:
-  {
+  default: {
     if (expanded_width != width)
       glPixelStorei(GL_UNPACK_ROW_LENGTH, expanded_width);
-    if (g_ogl_config.bSupportsTextureStorage)
+    if (m_config.enviroment)
     {
-      glTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, layer, width, height, 1, gl_format,
-        gl_type, src);
+      if (g_ogl_config.bSupportsTextureStorage)
+      {
+        glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, level, 0, 0, width, height,
+                        gl_format, gl_type, src);
+      }
+      else
+      {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, level, gl_iformat, width, height, 0,
+                     gl_format, gl_type, src);
+      }
     }
     else
     {
-      glTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_iformat, width, height, 1, 0, gl_format,
-        gl_type, src);
+      if (g_ogl_config.bSupportsTextureStorage)
+      {
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, layer, width, height, 1, gl_format,
+                        gl_type, src);
+      }
+      else
+      {
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, level, gl_iformat, width, height, 1, 0, gl_format,
+                     gl_type, src);
+      }
     }
     if (expanded_width != width)
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -342,9 +387,7 @@ void OGLTexture::Load(const u8* src, u32 width, u32 height,
   SetStage();
 }
 
-void OGLTexture::DisableStage(u32 stage)
-{
-}
+void OGLTexture::DisableStage(u32 stage) {}
 
 void OGLTexture::SetStage()
 {

@@ -204,6 +204,25 @@ void TextureCacheBase::Cleanup(s32 _frameCount)
       ++iter;
     }
   }
+  auto env_iter = enviroment_cache.begin();
+  auto env_end = enviroment_cache.end();
+  while (env_iter != env_end)
+  {
+    if (env_iter->second.frameCount == FRAMECOUNT_INVALID)
+    {
+      env_iter->second.frameCount = _frameCount;
+    }
+    if (_frameCount > texture_kill_threshold + env_iter->second.frameCount)
+    {
+      env_iter = enviroment_cache.erase(env_iter);
+    }
+    else
+    {
+      env_iter->second.last_frame_hits = env_iter->second.hits;
+      env_iter->second.hits = 0;
+      ++env_iter;
+    }
+  }
   TexPool::iterator iter2 = texture_pool.begin();
   TexPool::iterator tcend2 = texture_pool.end();
   while (iter2 != tcend2)
@@ -483,6 +502,103 @@ void TextureCacheBase::BindTextures()
     if (IsValidBindPoint(static_cast<u32>(i)) && bound_textures[i])
     {
       bound_textures[i]->texture->Bind(i);
+    }
+  }
+  if (g_ActiveConfig.HiresMaterialMapsEnabled() && g_ActiveConfig.bForcePhongShading)
+  {
+    SetupEnviromentTexture();
+    if (bound_enviroment)
+    {
+      bound_enviroment->texture->Bind(8);
+    }
+  }
+}
+
+void TextureCacheBase::SetupEnviromentTexture()
+{
+  if (enviroment_cache.size() == 0 && HiresTexture::EnviromentExists("default"))
+  {
+    LoadEnviromentTexture("default");
+  }
+  for (u32 i = 0; i < bound_textures.size(); ++i)
+  {
+    if (IsValidBindPoint(static_cast<u32>(i)) && bound_textures[i])
+    {
+      auto env_iter = enviroment_cache.find(bound_textures[i]->basename);
+      if (env_iter == enviroment_cache.end() &&
+          HiresTexture::EnviromentExists(bound_textures[i]->basename))
+      {
+        LoadEnviromentTexture(bound_textures[i]->basename);
+      }
+      else
+      {
+        env_iter->second.frameCount = FRAMECOUNT_INVALID;
+        env_iter->second.hits++;
+      }
+    }
+  }
+  auto env_iter = enviroment_cache.begin();
+  auto env_end = enviroment_cache.end();
+  u64 currenthits = 0;
+  TCacheEntry* current = nullptr;
+  if (env_iter != env_end)
+  {
+    env_iter->second.frameCount = FRAMECOUNT_INVALID;
+    current = env_iter->second.envtexture;
+    env_iter++;
+  }
+  while (env_iter != env_end)
+  {
+    if (env_iter->second.last_frame_hits > currenthits)
+    {
+      currenthits = env_iter->second.last_frame_hits;
+      current = env_iter->second.envtexture;
+    }
+  }
+  bound_enviroment = current;
+}
+
+void TextureCacheBase::LoadEnviromentTexture(std::string basename)
+{
+  auto env_tex = HiresTexture::SearchEnviroment(basename, [this](size_t required_size) {
+    this->CheckTempSize(required_size);
+    return this->temp;
+  });
+  if (env_tex)
+  {
+    TextureConfig config;
+    config.width = env_tex->m_width;
+    config.height = env_tex->m_height;
+    config.levels = env_tex->m_levels;
+    config.pcformat = env_tex->m_format;
+    config.enviroment = true;
+    config.layers = 6;
+    TCacheEntry* entry = AllocateCacheEntry(config);
+    GFX_DEBUGGER_PAUSE_AT(NEXT_NEW_TEXTURE, true);
+
+    enviroment_cache.emplace(basename, entry);
+
+    entry->SetGeneralParameters(0, 0, 0);
+    entry->SetDimensions(env_tex->m_width, env_tex->m_height, env_tex->m_levels);
+    entry->SetHiresParams(true, basename, false, false, env_tex->has_arbitrary_mips, true);
+    entry->SetHashes(0, 0);
+    entry->is_efb_copy = false;
+
+    int currentlayer = 0;
+    u8* Bufferptr = TextureCacheBase::temp;
+    for (size_t i = 0; i < 6; i++)
+    {
+      entry->texture->Load(Bufferptr, config.width, config.height, config.width, 0,
+                           currentlayer);      
+      Bufferptr += TextureUtil::GetTextureSizeInBytes(config.width, config.height, config.pcformat);
+      for (u32 level = 1; level != env_tex->m_levels; ++level)
+      {
+        u32 mip_width = TextureUtil::CalculateLevelSize(config.width, level);
+        u32 mip_height = TextureUtil::CalculateLevelSize(config.height, level);
+        entry->texture->Load(Bufferptr, mip_width, mip_height, mip_width, level, currentlayer);
+        Bufferptr += TextureUtil::GetTextureSizeInBytes(mip_width, mip_height, config.pcformat);
+      }
+      currentlayer++;
     }
   }
 }
@@ -841,7 +957,7 @@ TextureCacheBase::TCacheEntry* TextureCacheBase::Load(const u32 stage)
   entry->SetGeneralParameters(address, texture_size, full_format);
   entry->SetDimensions(nativeW, nativeH, tex_levels);
   entry->SetHiresParams(!!hires_tex, basename, use_scaling, emissivematerial,
-                        !!hires_tex && hires_tex->has_arbitrary_mips);
+                        !!hires_tex && hires_tex->has_arbitrary_mips, false);
   entry->SetHashes(full_hash, tex_hash);
   entry->is_efb_copy = false;
 
@@ -1000,23 +1116,24 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
   // - EFB to RAM:
   //		Encodes the requested EFB data at its native resolution to the emulated RAM using shaders.
   //		Load() decodes the data from there again (using TextureDecoder) if the EFB copy is being
-  //used as a texture again. 		Advantage: CPU can read data from the EFB copy and we don't lose any
-  //important updates to the texture 		Disadvantage: Encoding+decoding steps often are redundant
-  //because only some games read or modify EFB copies before using them as textures.
+  // used as a texture again. 		Advantage: CPU can read data from the EFB copy and we don't lose
+  // any important updates to the texture 		Disadvantage: Encoding+decoding steps often are
+  // redundant because only some games read or modify EFB copies before using them as textures.
   //
   // - EFB to texture:
   //		Copies the requested EFB data to a texture object in VRAM, performing any color conversion
-  //using shaders. 		Advantage:	Works for many games, since in most cases EFB copies aren't read or
-  //modified at all before being used as a texture again. 					Since we don't do any further encoding or
-  //decoding here, this method is much faster. 					It also allows enhancing the visual quality by doing
-  //scaled EFB copies.
+  // using shaders. 		Advantage:	Works for many games, since in most cases EFB copies aren't read
+  // or modified at all before being used as a texture again. 					Since we don't do any
+  // further
+  // encoding or decoding here, this method is much faster. 					It also allows enhancing the
+  // visual quality by doing scaled EFB copies.
   //
   // - Hybrid EFB copies:
   //		1a) Whenever this function gets called, encode the requested EFB data to RAM (like EFB to
-  //RAM) 		1b) Set type to TCET_EC_DYNAMIC for all texture cache entries in the destination address
-  //range. 			If EFB copy caching is enabled, further checks will (try to) prevent redundant EFB
-  //copies. 		2) Check if a texture cache entry for the specified dstAddr already exists (i.e. if an
-  //EFB copy was triggered to that address before): 		2a) Entry doesn't exist:
+  // RAM) 		1b) Set type to TCET_EC_DYNAMIC for all texture cache entries in the destination
+  // address range. 			If EFB copy caching is enabled, further checks will (try to) prevent
+  // redundant EFB copies. 		2) Check if a texture cache entry for the specified dstAddr already
+  // exists (i.e. if an EFB copy was triggered to that address before): 		2a) Entry doesn't exist:
   //			- Also copy the requested EFB data to a texture object in VRAM (like EFB to texture)
   //			- Create a texture cache entry for the target (type = TCET_EC_VRAM)
   //			- Store a hash of the encoded RAM data in the texcache entry.
@@ -1024,20 +1141,22 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
   //			- Like case 2a, but reuse the old texcache entry instead of creating a new one.
   //		2c) Entry exists AND type is TCET_EC_DYNAMIC:
   //			- Only encode the texture to RAM (like EFB to RAM) and store a hash of the encoded data in
-  //the existing texcache entry.
+  // the existing texcache entry.
   //			- Do NOT copy the requested EFB data to a VRAM object. Reason: the texture is dynamic,
-  //i.e. the CPU is modifying it. Storing a VRAM copy is useless, because we'd always end up
-  //deleting it and reloading the data from RAM anyway. 		3) If the EFB copy gets used as a texture,
-  //compare the source RAM hash with the hash you stored when encoding the EFB data to RAM. 		3a) If
-  //the two hashes match AND type is TCET_EC_VRAM, reuse the VRAM copy you created 		3b) If the two
-  //hashes differ AND type is TCET_EC_VRAM, screw your existing VRAM copy. Set type to
-  //TCET_EC_DYNAMIC. 			Redecode the source RAM data to a VRAM object. The entry basically behaves like
-  //a normal texture now. 		3c) If type is TCET_EC_DYNAMIC, treat the EFB copy like a normal texture.
-  //		Advantage: 	Non-dynamic EFB copies can be visually enhanced like with EFB to texture.
+  // i.e. the CPU is modifying it. Storing a VRAM copy is useless, because we'd always end up
+  // deleting it and reloading the data from RAM anyway. 		3) If the EFB copy gets used as a
+  // texture, compare the source RAM hash with the hash you stored when encoding the EFB data to
+  // RAM. 3a) If the two hashes match AND type is TCET_EC_VRAM, reuse the VRAM copy you created
+  // 3b) If the two hashes differ AND type is TCET_EC_VRAM, screw your existing VRAM copy. Set type
+  // to TCET_EC_DYNAMIC. 			Redecode the source RAM data to a VRAM object. The entry basically
+  // behaves
+  // like a normal texture now. 		3c) If type is TCET_EC_DYNAMIC, treat the EFB copy like a normal
+  // texture. 		Advantage: 	Non-dynamic EFB copies can be visually enhanced like with EFB to
+  // texture.
   //					Compatibility is as good as EFB to RAM.
   //		Disadvantage:	Slower than EFB to texture and often even slower than EFB to RAM.
   //						EFB copy cache depends on accurate texture hashing being enabled. However, with
-  //accurate hashing you end up being as slow as without a copy cache anyway.
+  // accurate hashing you end up being as slow as without a copy cache anyway.
   //
   // Disadvantage of all methods: Calling this function requires the GPU to perform a pipeline flush
   // which stalls any further CPU processing.

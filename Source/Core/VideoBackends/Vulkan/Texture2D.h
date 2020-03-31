@@ -35,7 +35,7 @@ public:
   static std::unique_ptr<Texture2D> Create(u32 width, u32 height, u32 levels, u32 layers,
     VkFormat format, VkSampleCountFlagBits samples,
     VkImageViewType view_type, VkImageTiling tiling,
-    VkImageUsageFlags usage);
+                                           VkImageUsageFlags usage, VkImageCreateFlags flags = 0);
 
   static std::unique_ptr<Texture2D> CreateFromExistingImage(u32 width, u32 height, u32 levels,
     u32 layers, VkFormat format,

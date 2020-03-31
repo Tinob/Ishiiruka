@@ -73,6 +73,8 @@ enum BaseType
   Unorm8
 };
 
+class D3DTexture2D;
+
 class TextureEncoder
 {
 

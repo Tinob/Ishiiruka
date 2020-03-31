@@ -28,7 +28,7 @@ public:
     DXGI_FORMAT srv_format = DXGI_FORMAT_UNKNOWN,
     DXGI_FORMAT dsv_format = DXGI_FORMAT_UNKNOWN,
     DXGI_FORMAT rtv_format = DXGI_FORMAT_UNKNOWN,
-    bool multisampled = false);
+    bool multisampled = false, bool cube = false);
   static D3DTexture2D* Create(
     u32 width,
     u32 height,

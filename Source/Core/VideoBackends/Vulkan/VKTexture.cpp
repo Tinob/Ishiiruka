@@ -48,8 +48,10 @@ std::unique_ptr<VKTexture> VKTexture::Create(const TextureConfig& tex_config)
     }
   }
   auto texture = Texture2D::Create(tex_config.width, tex_config.height, tex_config.levels,
-    tex_config.layers, vk_format, VK_SAMPLE_COUNT_1_BIT,
-    VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_TILING_OPTIMAL, usage);
+                                   tex_config.layers, vk_format, VK_SAMPLE_COUNT_1_BIT,
+                                   tex_config.enviroment ? VK_IMAGE_VIEW_TYPE_CUBE :
+                                                           VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+                                   VK_IMAGE_TILING_OPTIMAL, usage, tex_config.enviroment ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0);
 
   if (!texture)
   {

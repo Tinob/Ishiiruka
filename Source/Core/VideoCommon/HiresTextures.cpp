@@ -60,11 +60,23 @@ enum MapType
 
 };
 
-static const std::string s_maps_tags[] = {
-    std::string(""),     std::string(".mat"),  std::string(".lum"),
-    std::string(".nrm"), std::string(".bump"), std::string(".spec"),
-
+enum EnvType
+{
+  positiveX = 0,
+  negativeX = 1,
+  positiveY = 2,
+  negativeY = 3,
+  positiveZ = 4,
+  negativeZ = 5
 };
+
+static const std::string s_maps_tags[] = {std::string(""),      std::string(".mat"),
+                                          std::string(".lum"),  std::string(".nrm"),
+                                          std::string(".bump"), std::string(".spec")};
+
+static const std::string s_env_tags[] = {std::string(".px"), std::string(".nx"),
+                                         std::string(".py"), std::string(".ny"),
+                                         std::string(".pz"), std::string(".nz")};
 
 struct HiresTextureCacheItem
 {
@@ -77,10 +89,25 @@ struct HiresTextureCacheItem
   }
 };
 
-typedef std::unordered_map<std::string, HiresTextureCacheItem> HiresTextureCache;
-static HiresTextureCache s_textureMap;
+struct EnvTextureCacheItem
+{
+  bool has_arbitrary_mips;
+  std::array<std::vector<hires_mip_level>, EnvType::negativeZ + 1> maps;
 
-static std::unordered_map<std::string, std::shared_ptr<HiresTexture>> s_textureCache;
+  EnvTextureCacheItem(size_t minsize) : has_arbitrary_mips(false)
+  {
+    maps[EnvType::positiveX].resize(minsize);
+  }
+};
+
+typedef std::unordered_map<std::string, HiresTextureCacheItem> HiresTextureCache;
+typedef std::unordered_map<std::string, EnvTextureCacheItem> EnvTextureCache;
+static HiresTextureCache s_textureMap;
+static EnvTextureCache s_enviromentMap;
+typedef std::unordered_map<std::string, std::shared_ptr<HiresTexture>> TextureCache;
+static TextureCache s_textureCache;
+static TextureCache s_enviromentCache;
+
 static std::mutex s_textureCacheMutex;
 static Common::Flag s_textureCacheAbortLoading;
 
@@ -89,6 +116,8 @@ static size_t max_mem = 0;
 static std::thread s_prefetcher;
 
 static const std::string s_format_prefix = "tex1_";
+static const std::string s_enviroment_prefix = "env_";
+
 HiresTexture::HiresTexture()
     : m_format(PC_TEX_FMT_NONE), m_height(0), m_levels(0), m_nrm_levels(0), m_lum_levels(0),
       m_cached_data(nullptr), m_cached_data_size(0)
@@ -112,8 +141,8 @@ void HiresTexture::Shutdown()
     s_textureCacheAbortLoading.Set();
     s_prefetcher.join();
   }
-
   s_textureMap.clear();
+  s_enviromentMap.clear();
   s_textureCache.clear();
 }
 
@@ -128,6 +157,124 @@ std::string HiresTexture::GetTextureDirectory(const std::string& game_id)
   return texture_directory;
 }
 
+static const std::string ddscode = ".dds";
+static const std::string cddscode = ".DDS";
+static const std::string miptag = "mip";
+
+void HiresTexture::ProccessEnviroment(const std::string& fileitem, std::string& filename,
+                                      const std::string& extension)
+{
+  size_t map_index = 0;
+  for (size_t tag = 0; tag <= EnvType::negativeZ; tag++)
+  {
+    if (StringEndsWith(filename, s_env_tags[tag]))
+    {
+      map_index = tag;
+      filename = filename.substr(0, filename.size() - s_env_tags[tag].size());
+      break;
+    }
+  }
+  const bool is_compressed = extension.compare(ddscode) == 0 || extension.compare(cddscode) == 0;
+  hires_mip_level mip_level_detail(fileitem, extension, is_compressed);
+  u32 level = 0;
+  size_t idx = filename.find_last_of('_');
+  std::string miplevel = filename.substr(idx + 1, std::string::npos);
+  if (miplevel.substr(0, miptag.length()) == miptag)
+  {
+    sscanf(miplevel.substr(3, std::string::npos).c_str(), "%i", &level);
+    filename = filename.substr(0, idx);
+  }
+  EnvTextureCache::iterator iter = s_enviromentMap.find(filename);
+  u32 min_item_size = level + 1;
+  if (iter == s_enviromentMap.end())
+  {
+    EnvTextureCacheItem item(min_item_size);
+    item.maps[map_index].resize(min_item_size);
+    std::vector<hires_mip_level>& dst = item.maps[map_index];
+    dst[level] = mip_level_detail;
+    s_enviromentMap.emplace(filename, item);
+  }
+  else
+  {
+    std::vector<hires_mip_level>& dst = iter->second.maps[map_index];
+    if (dst.size() < min_item_size)
+    {
+      dst.resize(min_item_size);
+    }
+    dst[level] = mip_level_detail;
+  }
+}
+
+void HiresTexture::ProccessTexture(const std::string& fileitem, std::string& filename,
+                                   const std::string& extension, const bool BuildMaterialMaps)
+{
+  
+  size_t map_index = 0;
+  size_t max_type = BuildMaterialMaps ? MapType::specular : MapType::normal;
+  bool arbitrary_mips = false;
+  for (size_t tag = 1; tag <= MapType::specular; tag++)
+  {
+    if (StringEndsWith(filename, s_maps_tags[tag]))
+    {
+      map_index = tag;
+      filename = filename.substr(0, filename.size() - s_maps_tags[tag].size());
+      break;
+    }
+  }
+  if (map_index > max_type)
+  {
+    return;
+  }
+  if (BuildMaterialMaps && map_index == MapType::material)
+  {
+    return;
+  }
+  else if (!BuildMaterialMaps && map_index == MapType::color)
+  {
+    const size_t arb_index = filename.rfind("_arb");
+    arbitrary_mips = arb_index != std::string::npos;
+    if (arbitrary_mips)
+      filename.erase(arb_index, 4);
+  }
+  const bool is_compressed = extension.compare(ddscode) == 0 || extension.compare(cddscode) == 0;
+  hires_mip_level mip_level_detail(fileitem, extension, is_compressed);
+  u32 level = 0;
+  size_t idx = filename.find_last_of('_');
+  std::string miplevel = filename.substr(idx + 1, std::string::npos);
+  if (miplevel.substr(0, miptag.length()) == miptag)
+  {
+    sscanf(miplevel.substr(3, std::string::npos).c_str(), "%i", &level);
+    filename = filename.substr(0, idx);
+  }
+  HiresTextureCache::iterator iter = s_textureMap.find(filename);
+  u32 min_item_size = level + 1;
+  if (iter == s_textureMap.end())
+  {
+    HiresTextureCacheItem item(min_item_size);
+    if (arbitrary_mips)
+    {
+      item.has_arbitrary_mips = true;
+    }
+    item.maps[map_index].resize(min_item_size);
+    std::vector<hires_mip_level>& dst = item.maps[map_index];
+    dst[level] = mip_level_detail;
+    s_textureMap.emplace(filename, item);
+  }
+  else
+  {
+    std::vector<hires_mip_level>& dst = iter->second.maps[map_index];
+    if (arbitrary_mips)
+    {
+      iter->second.has_arbitrary_mips = true;
+    }
+    if (dst.size() < min_item_size)
+    {
+      dst.resize(min_item_size);
+    }
+    dst[level] = mip_level_detail;
+  }
+}
+
 void HiresTexture::Update()
 {
   bool BuildMaterialMaps = g_ActiveConfig.bHiresMaterialMapsBuild;
@@ -140,7 +287,9 @@ void HiresTexture::Update()
   if (!g_ActiveConfig.bHiresTextures)
   {
     s_textureMap.clear();
+    s_enviromentMap.clear();
     s_textureCache.clear();
+    s_enviromentCache.clear();
     size_sum.store(0);
     return;
   }
@@ -148,15 +297,15 @@ void HiresTexture::Update()
   if (!g_ActiveConfig.bCacheHiresTextures)
   {
     s_textureCache.clear();
+    s_enviromentCache.clear();
     size_sum.store(0);
   }
 
   s_textureMap.clear();
+  s_enviromentMap.clear();
   const std::string& game_id = SConfig::GetInstance().GetGameID();
   const std::string texture_directory = GetTextureDirectory(game_id);
-
-  std::string ddscode(".dds");
-  std::string cddscode(".DDS");
+  const std::string resource_directory = File::GetSysDirectory() + RESOURCES_DIR DIR_SEP;
   std::vector<std::string> Extensions;
   Extensions.push_back(".png");
   if (!BuildMaterialMaps)
@@ -164,84 +313,41 @@ void HiresTexture::Update()
     Extensions.push_back(".dds");
   }
 
+  std::vector<std::string> Resourcefilenames =
+      Common::DoFileSearch({resource_directory}, Extensions, /*recursive*/ true);
+
+  for (const std::string& fileitem : Resourcefilenames)
+  {
+    std::string filename;
+    std::string extension;
+    SplitPath(fileitem, nullptr, &filename, &extension);
+    if (filename.starts_with(s_format_prefix))
+    {
+      ProccessTexture(fileitem, filename, extension, BuildMaterialMaps);
+    }
+    else if (filename.starts_with(s_enviroment_prefix))
+    {
+      filename = filename.substr(s_enviroment_prefix.length());
+      ProccessEnviroment(fileitem, filename, extension);
+    }
+  }
+
   std::vector<std::string> filenames =
       Common::DoFileSearch({texture_directory}, Extensions, /*recursive*/ true);
-
-  const std::string miptag = "mip";
 
   for (const std::string& fileitem : filenames)
   {
     std::string filename;
-    std::string Extension;
-    SplitPath(fileitem, nullptr, &filename, &Extension);
-    if (filename.substr(0, s_format_prefix.length()) != s_format_prefix)
+    std::string extension;
+    SplitPath(fileitem, nullptr, &filename, &extension);
+    if (filename.starts_with(s_format_prefix))
     {
-      // Discard wrong files
-      continue;
+      ProccessTexture(fileitem, filename, extension, BuildMaterialMaps);
     }
-    size_t map_index = 0;
-    size_t max_type = BuildMaterialMaps ? MapType::specular : MapType::normal;
-    bool arbitrary_mips = false;
-    for (size_t tag = 1; tag <= MapType::specular; tag++)
+    else if (filename.starts_with(s_enviroment_prefix))
     {
-      if (StringEndsWith(filename, s_maps_tags[tag]))
-      {
-        map_index = tag;
-        filename = filename.substr(0, filename.size() - s_maps_tags[tag].size());
-        break;
-      }
-    }
-    if (map_index > max_type)
-    {
-      continue;
-    }
-    if (BuildMaterialMaps && map_index == MapType::material)
-    {
-      continue;
-    }
-    else if (!BuildMaterialMaps && map_index == MapType::color)
-    {
-      const size_t arb_index = filename.rfind("_arb");
-      arbitrary_mips = arb_index != std::string::npos;
-      if (arbitrary_mips)
-        filename.erase(arb_index, 4);
-    }
-    const bool is_compressed = Extension.compare(ddscode) == 0 || Extension.compare(cddscode) == 0;
-    hires_mip_level mip_level_detail(fileitem, Extension, is_compressed);
-    u32 level = 0;
-    size_t idx = filename.find_last_of('_');
-    std::string miplevel = filename.substr(idx + 1, std::string::npos);
-    if (miplevel.substr(0, miptag.length()) == miptag)
-    {
-      sscanf(miplevel.substr(3, std::string::npos).c_str(), "%i", &level);
-      filename = filename.substr(0, idx);
-    }
-    HiresTextureCache::iterator iter = s_textureMap.find(filename);
-    u32 min_item_size = level + 1;
-    if (iter == s_textureMap.end())
-    {
-      HiresTextureCacheItem item(min_item_size);
-      if (arbitrary_mips)
-      {
-        item.has_arbitrary_mips = true;
-      }
-      item.maps[map_index].resize(min_item_size);
-      std::vector<hires_mip_level>& dst = item.maps[map_index];
-      dst[level] = mip_level_detail;
-      s_textureMap.emplace(filename, item);
-    }
-    else
-    {
-      std::vector<hires_mip_level>& dst = iter->second.maps[map_index];
-      if (arbitrary_mips)
-      {
-        iter->second.has_arbitrary_mips = true;
-      }
-      if (dst.size() < min_item_size)
-      {
-        dst.resize(min_item_size);
-      }
-      dst[level] = mip_level_detail;
+      filename = filename.substr(s_enviroment_prefix.length());
+      ProccessEnviroment(fileitem, filename, extension);
     }
   }
 
@@ -261,6 +367,20 @@ void HiresTexture::Update()
         iter++;
       }
     }
+    // remove cached but deleted enviroment textures
+    auto iterenv = s_enviromentCache.begin();
+    while (iterenv != s_enviromentCache.end())
+    {
+      if (s_enviromentMap.find(iterenv->first) == s_enviromentMap.end())
+      {
+        size_sum.fetch_sub(iterenv->second->m_cached_data_size);
+        iterenv = s_enviromentCache.erase(iterenv);
+      }
+      else
+      {
+        iterenv++;
+      }
+    }
     s_textureCacheAbortLoading.Clear();
     s_prefetcher = std::thread(Prefetch);
     if (g_ActiveConfig.bWaitForCacheHiresTextures && s_prefetcher.joinable())
@@ -273,7 +393,7 @@ void HiresTexture::Update()
 void HiresTexture::Prefetch()
 {
   Common::SetCurrentThreadName("Prefetcher");
-  const size_t total = s_textureMap.size();
+  const size_t total = s_textureMap.size() + s_enviromentMap.size();
   size_t count = 0;
   size_t notification = 10;
   u32 starttime = Common::Timer::GetTimeMs();
@@ -287,8 +407,8 @@ void HiresTexture::Prefetch()
     if (iter == s_textureCache.end())
     {
       lk.unlock();
-      HiresTexture* ptr =
-          Load(base_filename, [](size_t requested_size) { return new u8[requested_size]; }, true);
+      HiresTexture* ptr = Load(
+          base_filename, [](size_t requested_size) { return new u8[requested_size]; }, true);
       lk.lock();
       if (ptr != nullptr)
       {
@@ -340,6 +460,71 @@ void HiresTexture::Prefetch()
       notification += 10;
     }
   }
+
+  for (const auto& entry : s_enviromentMap)
+  {
+    const std::string& base_filename = entry.first;
+
+    std::unique_lock<std::mutex> lk(s_textureCacheMutex);
+
+    auto iter = s_enviromentCache.find(base_filename);
+    if (iter == s_enviromentCache.end())
+    {
+      lk.unlock();
+      HiresTexture* ptr = LoadEnviroment(
+          base_filename, [](size_t requested_size) { return new u8[requested_size]; }, true);
+      lk.lock();
+      if (ptr != nullptr)
+      {
+        size_sum.fetch_add(ptr->m_cached_data_size);
+        iter = s_enviromentCache.insert(
+            iter, std::make_pair(base_filename, std::shared_ptr<HiresTexture>(ptr)));
+      }
+    }
+
+    if (s_textureCacheAbortLoading.IsSet())
+    {
+      if (g_ActiveConfig.bWaitForCacheHiresTextures)
+      {
+        Host_UpdateProgressDialog("", -1, -1);
+      }
+      return;
+    }
+
+    if (size_sum.load() > max_mem)
+    {
+      Config::SetCurrent(Config::GFX_HIRES_TEXTURES, false);
+
+      OSD::AddMessage(
+          StringFromFormat(
+              "Custom Textures prefetching after %.1f MB aborted, not enough RAM available",
+              size_sum / (1024.0 * 1024.0)),
+          10000);
+      if (g_ActiveConfig.bWaitForCacheHiresTextures)
+      {
+        Host_UpdateProgressDialog("", -1, -1);
+      }
+      return;
+    }
+    count++;
+    size_t percent = (count * 100) / total;
+    if (percent >= notification)
+    {
+      if (g_ActiveConfig.bWaitForCacheHiresTextures)
+      {
+        Host_UpdateProgressDialog(GetStringT("Prefetching Custom Textures...").c_str(),
+                                  static_cast<int>(count), static_cast<int>(total));
+      }
+      else
+      {
+        OSD::AddMessage(StringFromFormat("Custom Textures prefetching %.1f MB %zu %% finished",
+                                         size_sum / (1024.0 * 1024.0), percent),
+                        2000);
+      }
+      notification += 10;
+    }
+  }
+
   if (g_ActiveConfig.bWaitForCacheHiresTextures)
   {
     Host_UpdateProgressDialog("", -1, -1);
@@ -535,8 +720,8 @@ HiresTexture::Search(const std::string& basename,
     lk.unlock();
     if (size_sum.load() < max_mem)
     {
-      std::shared_ptr<HiresTexture> ptr(
-          Load(basename, [](size_t requested_size) { return new u8[requested_size]; }, true));
+      std::shared_ptr<HiresTexture> ptr(Load(
+          basename, [](size_t requested_size) { return new u8[requested_size]; }, true));
       lk.lock();
       if (ptr)
       {
@@ -550,6 +735,56 @@ HiresTexture::Search(const std::string& basename,
     }
   }
   return std::shared_ptr<HiresTexture>(Load(basename, request_buffer_delegate, false));
+}
+
+bool HiresTexture::EnviromentExists(const std::string& basename)
+{
+  if (s_enviromentMap.size() == 0 || !g_ActiveConfig.HiresMaterialMapsEnabled())
+  {
+    return false;
+  }
+  EnvTextureCache::iterator iter = s_enviromentMap.find(basename);
+  if (iter == s_enviromentMap.end())
+  {
+    return false;
+  }
+  return true;
+}
+
+std::shared_ptr<HiresTexture>
+HiresTexture::SearchEnviroment(const std::string& basename,
+                               std::function<u8*(size_t)> request_buffer_delegate)
+{
+  if (g_ActiveConfig.bCacheHiresTextures)
+  {
+    std::unique_lock<std::mutex> lk(s_textureCacheMutex);
+
+    auto iter = s_enviromentCache.find(basename);
+    if (iter != s_enviromentCache.end())
+    {
+      HiresTexture* current = iter->second.get();
+      u8* dst = request_buffer_delegate(current->m_cached_data_size);
+      memcpy(dst, current->m_cached_data.get(), current->m_cached_data_size);
+      return iter->second;
+    }
+    lk.unlock();
+    if (size_sum.load() < max_mem)
+    {
+      std::shared_ptr<HiresTexture> ptr(LoadEnviroment(
+          basename, [](size_t requested_size) { return new u8[requested_size]; }, true));
+      lk.lock();
+      if (ptr)
+      {
+        s_enviromentCache[basename] = ptr;
+        HiresTexture* current = ptr.get();
+        size_sum.fetch_add(current->m_cached_data_size);
+        u8* dst = request_buffer_delegate(current->m_cached_data_size);
+        memcpy(dst, current->m_cached_data.get(), current->m_cached_data_size);
+      }
+      return ptr;
+    }
+  }
+  return std::shared_ptr<HiresTexture>(LoadEnviroment(basename, request_buffer_delegate, false));
 }
 
 ImageLoaderParams LoadMipLevel(const hires_mip_level& item,
@@ -860,6 +1095,134 @@ HiresTexture* HiresTexture::Load(const std::string& basename,
     if (ret->m_lum_levels != levels)
     {
       ret->m_lum_levels = 0;
+    }
+  }
+  return ret;
+}
+
+HiresTexture* HiresTexture::LoadEnviroment(const std::string& basename,
+                                           std::function<u8*(size_t)> request_buffer_delegate,
+                                           bool cacheresult)
+{
+  if (s_enviromentMap.size() == 0 || !g_ActiveConfig.HiresMaterialMapsEnabled())
+  {
+    return nullptr;
+  }
+  EnvTextureCache::iterator iter = s_enviromentMap.find(basename);
+  if (iter == s_enviromentMap.end())
+  {
+    return nullptr;
+  }
+  // all enviroment faces are mandatory
+  EnvTextureCacheItem& current = iter->second;
+  bool complete = current.maps.size() == (EnvType::negativeZ + 1);
+  size_t levels = SIZE_MAX;
+  for (size_t i = 0; i < current.maps.size(); i++)
+  {
+    levels = std::min(levels, current.maps[i].size());
+    if (current.maps[i].size() == 0)
+    {
+      complete = false;
+      break;
+    }
+  }
+  if (!complete)
+  {
+    return nullptr;
+  }
+  HiresTexture* ret = nullptr;
+  u8* buffer_pointer;
+  u32 maxwidth = 0;
+  u32 maxheight = 0;
+  bool last_level_is_dds = false;
+  bool allocated_data = false;
+  bool mipmapsize_included = false;
+  size_t remaining_buffer_size = 0;
+  size_t total_buffer_size = 0;
+  std::function<u8*(size_t, bool)> first_level_function = [&](size_t requiredsize,
+                                                              bool mipmapsincluded) {
+    // Allocate double side buffer if we are going to load normal maps
+    allocated_data = true;
+    mipmapsize_included = mipmapsincluded;
+    // Pre allocate space for the textures and potetially all the posible mip levels
+    if (levels > 1 && !mipmapsincluded)
+    {
+      requiredsize = (requiredsize * 4) / 3;
+    }
+    total_buffer_size = requiredsize * (EnvType::negativeZ + 1);
+    remaining_buffer_size = total_buffer_size;
+    buffer_pointer = request_buffer_delegate(total_buffer_size);
+    return buffer_pointer;
+  };
+  std::function<u8*(size_t, bool)> allocation_function = [&](size_t requiredsize,
+                                                             bool mipmapsincluded) {
+    // is required size is biguer that the remaining size on the packed buffer just reject
+    if (requiredsize > remaining_buffer_size)
+    {
+      return static_cast<u8*>(nullptr);
+    }
+    // just return the pointer to pack the textures in a single buffer.
+    return buffer_pointer;
+  };
+
+  for (size_t i = 0; i < current.maps.size(); i++)
+  {
+    for (size_t level = 0; level < levels; level++)
+    {
+      const hires_mip_level& item = current.maps[i][level];
+      ImageLoaderParams imgInfo =
+          LoadMipLevel(item, i == 0 && level == 0 ? first_level_function : allocation_function, cacheresult);
+      imgInfo.releaseresourcesonerror = cacheresult;
+      bool ddsfile = item.is_compressed && TexDecoder::IsCompressed(imgInfo.resultTex);
+      if ((level > 0 && ddsfile != last_level_is_dds) || imgInfo.dst == nullptr ||
+          imgInfo.resultTex == PC_TEX_FMT_NONE)
+      {
+        // don't give support to mixed formats
+        if (allocated_data && cacheresult && imgInfo.dst != nullptr)
+        {
+          delete[] imgInfo.dst;
+        }
+        break;
+      }
+      last_level_is_dds = ddsfile;
+      if (level == 0 && i == 0)
+      {
+        ret = new HiresTexture();
+        ret->has_arbitrary_mips = current.has_arbitrary_mips;
+        ret->m_format = imgInfo.resultTex;
+        ret->m_width = maxwidth = imgInfo.Width;
+        ret->m_height = maxheight = imgInfo.Height;
+        if (cacheresult)
+        {
+          ret->m_cached_data.reset(imgInfo.dst);
+          ret->m_cached_data_size = total_buffer_size;
+        }
+      }
+      else
+      {
+        if (!ValidateImage(imgInfo, level, maxwidth, maxheight, ret->m_format, "color"))
+          break;
+      }
+      
+      buffer_pointer = imgInfo.dst + imgInfo.data_size;
+      remaining_buffer_size -= imgInfo.data_size;
+
+      if (imgInfo.nummipmaps > 0)
+      {
+        // Give priority to load dds with packed levels
+        ret->m_levels = imgInfo.nummipmaps + 1;
+        break;
+      }
+      else if (i == 0)
+      {
+        ret->m_levels++;
+      }
+
+      // no more mipmaps available
+      if (maxwidth == 1 && maxheight == 1)
+        break;
+      maxwidth = std::max(maxwidth >> 1, 1u);
+      maxheight = std::max(maxheight >> 1, 1u);
     }
   }
   return ret;

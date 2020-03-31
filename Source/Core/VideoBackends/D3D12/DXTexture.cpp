@@ -79,6 +79,7 @@ DXTexture::DXTexture(const TextureConfig& tex_config) : HostTexture(tex_config)
       DXGI_FORMAT_UNKNOWN,
       DXGI_FORMAT_UNKNOWN,
       false,
+      m_config.enviroment,
       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
     );
     // EXISTINGD3D11TODO: better debug names

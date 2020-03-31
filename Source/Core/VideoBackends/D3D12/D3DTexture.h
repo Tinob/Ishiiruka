@@ -41,6 +41,7 @@ public:
     DXGI_FORMAT dsv_format = DXGI_FORMAT_UNKNOWN,
     DXGI_FORMAT rtv_format = DXGI_FORMAT_UNKNOWN,
     bool multisampled = false,
+    bool cube = false,
     D3D12_RESOURCE_STATES resource_state = D3D12_RESOURCE_STATE_COMMON);
   static D3DTexture2D* Create(u32 width,
     u32 height,
@@ -48,6 +49,7 @@ public:
     DXGI_FORMAT fmt,
     u32 levels = 1,
     u32 slices = 1,
+    bool cubemap = false,
     D3D12_SUBRESOURCE_DATA* data = nullptr);
   void TransitionToResourceState(ID3D12GraphicsCommandList* command_list, D3D12_RESOURCE_STATES state_after)
   {
@@ -128,6 +130,7 @@ private:
   D3D12_RESOURCE_STATES m_resource_state = D3D12_RESOURCE_STATE_COMMON;
 
   bool m_multisampled{};
+  bool m_cube{};
 
   std::atomic<unsigned long> m_ref = 1;
   u32 m_bind_falgs = {};

@@ -285,7 +285,7 @@ void XFBSource::CopyEFB(float gamma)
       texdesc.Format,
       DXGI_FORMAT_UNKNOWN,
       texdesc.Format,
-      false,
+      false, false,
       D3D12_RESOURCE_STATE_RENDER_TARGET
     );
   }
