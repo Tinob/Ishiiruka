@@ -145,6 +145,7 @@ private:
   wxCheckBox* m_memcard_write;
   wxCheckBox* m_music_off_chkbox;
   wxCheckBox* m_record_chkbox;
+  wxCheckBox* m_copy_wii_save;
 
   wxSpinCtrl* m_player_padbuf_spin;
 
