@@ -562,6 +562,10 @@ void GameListCtrl::UpdateItemAtColumn(long index, int column)
     {
       name = wxString::Format(_("%s (Disc %i)"), name.c_str(), disc_number);
     }
+    else if (iso_file.GetFileName().find(".nkit") != std::string::npos)
+    {
+      name = "This file is a .nkit and can't be used. Please convert to .iso";
+    }
 
     SetItem(index, COLUMN_TITLE, name, -1);
     break;
