@@ -241,7 +241,16 @@ namespace Discord
       discord_presence.smallImageText = "Dolphin is an emulator for the GameCube and the Wii.";
     }
 
-    discord_presence.details = title.empty() ? "Not in-game" : title.c_str();
+    if (title.empty())
+      discord_presence.details = "Not in-game";
+    else if (SConfig::GetInstance().GetGameID() == "RSBE01")
+    {
+      discord_presence.details = "Super Smash Bros. Brawl";
+      discord_presence.largeImageText = "Super Smash Bros. Brawl";
+    }
+    else
+      discord_presence.details = title.c_str();
+
     discord_presence.startTimestamp = std::time(nullptr);
 
     if (party_size > 0)
