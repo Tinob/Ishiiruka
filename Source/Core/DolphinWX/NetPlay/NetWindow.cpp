@@ -215,6 +215,15 @@ wxSizer* NetPlayDialog::CreatePlayerListGUI(wxWindow* parent)
 
     UpdateHostLabel();
 
+    if (TraversalClient::Connected)
+    {
+      if (wxTheClipboard->Open())
+      {
+        wxTheClipboard->SetData(new wxTextDataObject(m_host_label->GetLabel()));
+        wxTheClipboard->Close();
+      }
+    }
+
     wxBoxSizer* const host_szr = new wxBoxSizer(wxHORIZONTAL);
     host_szr->Add(m_host_type_choice);
     host_szr->Add(m_host_label, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, space5);
@@ -884,15 +893,6 @@ void NetPlayDialog::UpdateHostLabel()
       m_host_copy_btn->SetLabel(_("Copy"));
       m_host_copy_btn->Enable();
       m_host_copy_btn_is_retry = false;
-
-      if (m_is_hosting)
-      {
-        if (wxTheClipboard->Open())
-        {
-          wxTheClipboard->SetData(new wxTextDataObject(m_host_label->GetLabel()));
-          wxTheClipboard->Close();
-        }
-      }
       break;
     case TraversalClient::Failure:
       m_host_label->SetForegroundColour(*wxBLACK);
