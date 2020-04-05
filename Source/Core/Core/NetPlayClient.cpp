@@ -1402,6 +1402,10 @@ void NetPlayClient::ComputeMD5(const std::string& file_identifier)
   std::string file;
   if (file_identifier == WII_SDCARD)
     file = File::GetUserPath(F_WIISDCARD_IDX);
+  else if (file_identifier == BRAWL_SAVE_FILE)
+  {
+    file = File::GetSysDirectory() + "Wii" + DIR_SEP + "title" + DIR_SEP + "00010000" + DIR_SEP + "52534245" + DIR_SEP + "data" + DIR_SEP + BRAWL_SAVE_FILE;
+  }
   else
     file = dialog->FindGame(file_identifier);
 

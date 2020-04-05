@@ -135,6 +135,7 @@ wxSizer* NetPlayDialog::CreateTopGUI(wxWindow* parent)
     m_MD5_choice->Append(_("Current game"));
     m_MD5_choice->Append(_("Other game"));
     m_MD5_choice->Append(_("SD card"));
+    m_MD5_choice->Append(_("Save File"));
     m_MD5_choice->SetSelection(0);
 
     top_szr->Add(m_MD5_choice, 0, wxALIGN_CENTER_VERTICAL);
@@ -766,6 +767,10 @@ void NetPlayDialog::OnMD5ComputeRequested(wxCommandEvent&)
 
   case MD5Target::SdCard:
     file_identifier = WII_SDCARD;
+    break;
+
+  case MD5Target::SaveFile:
+    file_identifier = BRAWL_SAVE_FILE;
     break;
 
   default:
