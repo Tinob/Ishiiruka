@@ -216,7 +216,7 @@ wxSizer* NetPlayDialog::CreatePlayerListGUI(wxWindow* parent)
 
     UpdateHostLabel();
 
-    if (TraversalClient::Connected)
+    if (TraversalClient::Connected && m_host_label->GetLabelText() != "...")
     {
       if (wxTheClipboard->Open())
       {
