@@ -321,11 +321,11 @@ void HiresTexture::Update()
     std::string filename;
     std::string extension;
     SplitPath(fileitem, nullptr, &filename, &extension);
-    if (filename.starts_with(s_format_prefix))
+    if (filename.rfind(s_format_prefix, 0) == 0)
     {
       ProccessTexture(fileitem, filename, extension, BuildMaterialMaps);
     }
-    else if (filename.starts_with(s_enviroment_prefix))
+    else if (filename.rfind(s_enviroment_prefix, 0) == 0)
     {
       filename = filename.substr(s_enviroment_prefix.length());
       ProccessEnviroment(fileitem, filename, extension);
@@ -340,11 +340,11 @@ void HiresTexture::Update()
     std::string filename;
     std::string extension;
     SplitPath(fileitem, nullptr, &filename, &extension);
-    if (filename.starts_with(s_format_prefix))
+    if (filename.rfind(s_format_prefix, 0) == 0)
     {
       ProccessTexture(fileitem, filename, extension, BuildMaterialMaps);
     }
-    else if (filename.starts_with(s_enviroment_prefix))
+    else if (filename.rfind(s_enviroment_prefix, 0) == 0)
     {
       filename = filename.substr(s_enviroment_prefix.length());
       ProccessEnviroment(fileitem, filename, extension);
