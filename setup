@@ -1,0 +1,235 @@
+#!/bin/sh
+
+# --- Stops the script if errors are encountered. ---
+set -e
+# ---
+#
+# --- Based Off of/Ripped from https://github.com/FasterMelee/FasterMelee-installer/ Thank you Faster Melee Team!
+# ---
+
+if [ -f "./setup" ] && [ -z "${IN_NIX_SHELL++}" ]; then
+	echo "You are running a hosted copy of the script. Please *delete the local file 'setup'* and run"
+	echo ""
+	echo "sh -c \"\$(curl -Ls https://github.com/Birdthulu/Ishiiruka/raw/master/setup)"
+	echo ""
+	echo "to ensure you have the latest version!"
+	exit
+fi
+
+# --- Attempts to determine the number of cores in the CPU. ---
+# Source: https://gist.github.com/jj1bdx/5746298
+# Linux and similar...
+CPUS=$(getconf _NPROCESSORS_ONLN 2>/dev/null)
+# FreeBSD and similar...
+[ -z "$CPUS" ] && CPUS=$(getconf NPROCESSORS_ONLN)
+# Solaris and similar...
+[ -z "$CPUS" ] && CPUS=$(ksh93 -c 'getconf NPROCESSORS_ONLN')
+# Give up...
+[ -z "$CPUS" ] && CPUS=1
+# ---
+
+# --- define custom config links here!
+FPPVERSION="" # name of FPP version, used in folder name
+COMMITHASH="" # full commit hash 
+GITCLONELINK="" # Version of Ishiiruka
+CONFIGLINK="" # Packed configs, can be found under config/ or config/legacy/
+# ---
+
+# --- delete all "FasterProjectPlus" folders filled with incomplete installations
+echo ""
+echo "Attempting to delete incomplete installations of FPP..."
+for f in FasterProjectPlus*; do
+	if [ -d "${f}" ] && [ ! -d "$f/bin" ]; then
+		echo "Found incomplete installation at $f/, deleting."
+		rm -rf "$f" # is incomplete if bin/ doesn't exist
+	fi
+done
+# ---
+
+# --- ask if you want to delete all remaining FPP* folders
+echo ""
+echo "Would you like to overwrite ALL of your previous installations? (y/N)"
+read -r RESP
+if [ "$RESP" = "y" ] || [ "$RESP" = "Y" ]; then
+	echo "Are you sure? This action is not reversible! (y/N)"
+	read -r RESP
+	if [ "$RESP" = "y" ] || [ "$RESP" = "Y" ] ; then
+		rm -rf FasterProjectPlus*/
+		echo "Deleted all FPP folders!"
+	fi
+else
+	echo "No changes made!"
+fi
+# ---
+
+# --- if custom links aren't defined, prompt to choose a version
+if [ -z "$FPPVERSION" ] || [ -z "$COMMITHASH" ] || [ -z "$GITCLONELINK" ] || [ -z "$CONFIGLINK" ]; then #ORs used to ensure everything filled out
+	echo ""
+	echo "Which version of Faster Project Plus would you like to install? (default: 1)"
+	echo "1.) 2.0 (Latest version)"
+	read -r RESP
+	if [ "$RESP" -eq 1 ] 1> /dev/null; then
+	 	FPPVERSION="2.0"
+		CONFIGNAME="fppconfig"
+		COMMITHASH="a667c245df18678b5060b3807e1c3238536c0ef1" #TODO Must change once release hits!
+		CONFIGLINK="https://github.com/Birdthulu/Ishiiruka/raw/master/config/$FPPVERSION-$CONFIGNAME.tar.gz"
+		GITCLONELINK="https://github.com/Birdthulu/Ishiiruka"
+	fi
+
+	echo "Installing version $FPPVERSION!"
+else
+	echo ""
+	echo "Attempting to install version $FPPVERSION!"
+fi
+
+# Set FOLDERNAME based on FPP version
+FOLDERNAME="FasterProjectPlus-${FPPVERSION}"
+
+# --- check for previously installed version, ask if overwrite is wanted
+if [ -d "$FOLDERNAME" ]; then
+	echo "
+	FPP Folder with same version found! Would you like to overwrite? (y/N)"
+	read -r RESP
+	if [ "$RESP" = "y" ] || [ "$RESP" = "Y" ]; then
+		echo "Are you sure? This action is not reversible! (y/N)"
+		read -r RESP
+		if [ "$RESP" = "y" ] || [ "$RESP" = "Y" ] ; then
+			rm -r "$FOLDERNAME"
+			echo "Deleted!"
+		else
+			echo "Quitting!"
+			exit
+		fi
+	else
+		echo "Quitting!"
+		exit
+	fi
+fi
+# ---
+
+
+# --- prompt to install adapter support
+echo "
+Would you like to install udev rules for your Wii U adapter? (y/N) (Necessary for reduced-lag direct adapter connection)"
+read -r RESP
+if [ "$RESP" = "y" ] || [ "$RESP" = "Y" ]; then
+	if [ ! -z "${IN_NIX_SHELL++}" ]; then
+		echo "please add services.udev.extraRules = ''"
+		echo 'SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="057e", ATTRS{idProduct}=="0337", MODE="0666";'
+		echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="2300", SYMLINK+="model01", ENV{ID_MM_DEVICE_IGNORE}:="1", ENV{ID_MM_CANDIDATE}:="0";'
+		echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="2301", SYMLINK+="model01", ENV{ID_MM_DEVICE_IGNORE}:="1", ENV{ID_MM_CANDIDATE}:="0";'
+		echo "'';"
+	else
+		sudo rm -f /etc/udev/rules.d/51-gcadapter.rules # remove even if doesn't exist
+		echo 'SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="057e", ATTRS{idProduct}=="0337", MODE="0666"' | sudo tee /etc/udev/rules.d/51-gcadapter.rules > /dev/null # pipe to write-protected file, remove STDOUT
+		sudo udevadm control --reload-rules
+		echo "Rules added!"
+	fi
+else
+	echo "No changes made!"
+fi
+# ---
+
+# --- prompt to queue shortcut creation for later
+echo "
+Would you like to make a desktop shortcut? (Y/n)"
+read -r RESP
+if [ ! "$RESP" = "n" ] && [ ! "$RESP" = "N" ]; then
+	SHORTCUTBOOL=1
+	echo "Desktop shortcut queued!"
+else
+	SHORTCUTBOOL=0
+	echo "No changes made!"
+fi
+# ---
+
+# --- prompt for -j flag (# of cores utilized)
+echo ""
+echo "CPU Threads detected: $CPUS"
+echo "How many threads would you like to use to compile? (passed to make as -j flag, default: 1, range: 1 - $(( CPUS + 1 )))"
+read -r RESP
+if [ "$RESP" -ge 1 ] 2> /dev/null && [ "$RESP" -le $((CPUS + 1)) ] 2> /dev/null; then
+	CPUS=$RESP 
+else
+	CPUS=1
+fi
+echo "Using $CPUS thread(s)!"
+# ---
+
+# --- enter folder, download and extract needed files
+echo ""
+mkdir "$FOLDERNAME" && cd "$FOLDERNAME"
+echo "Downloading config files..."
+curl -LO# $CONFIGLINK
+echo "Extracting config files..."
+tar -xzf "$FPPVERSION-$CONFIGNAME.tar.gz" --checkpoint-action='exec=printf "%d/410 records extracted.\r" $TAR_CHECKPOINT' --totals
+rm "$FPPVERSION-$CONFIGNAME.tar.gz"
+echo ""
+echo "Downloading tarball..."
+curl -LO# "$GITCLONELINK/archive/$COMMITHASH.tar.gz"
+echo "Extracting tarball..."
+tar -xzf "$COMMITHASH.tar.gz" --checkpoint-action='exec=printf "%d/12130 records extracted.\r" $TAR_CHECKPOINT' --totals
+rm "$COMMITHASH.tar.gz"
+echo "" #spacing
+mv "Ishiiruka-$COMMITHASH" Ishiiruka
+cd Ishiiruka
+
+# --- move necessary config files into the build folder
+echo "Adding FPP config files..."
+mkdir build && cd build
+mv ../../Binaries .
+mv ../Data/dolphin-emu.png Binaries/
+# ---
+
+# --- cmake and compile
+echo "cmaking..."
+if [ ! -z "${IN_NIX_SHELL++}" ]; then
+	cmake .. -DLINUX_LOCAL_DEV=true -DGTK2_GLIBCONFIG_INCLUDE_DIR=${glib}/lib/glib-2.0/include -DGTK2_GDKCONFIG_INCLUDE_DIR=${gtk2}/lib/gtk-2.0/include -DGTK2_INCLUDE_DIRS=${gtk2}/lib/gtk-2.0 -DENABLE_LTO=True
+else
+	cmake .. -DLINUX_LOCAL_DEV=true
+fi
+echo "Compiling..."
+make -j $CPUS -s
+# ---
+
+# --- Delete created files and old symlinks, isolate Binaries to their own folder
+echo "Cleaning up..."
+cd ../..
+mv Ishiiruka/build/Binaries/ bin/
+rm -rf Ishiiruka # -f required to remove git history
+rm -f ../launch-faster-project-plus # -f required if shortcuts do not exist
+rm -f ../launch-fpp
+# ---
+
+# --- create symlink to newly compiled dolphin-emu. if queued, create shortcut.
+echo "Creating shortcuts..."
+ln -s "$FOLDERNAME/bin/dolphin-emu" ../launch-fpp
+if [ "$SHORTCUTBOOL" -eq 1 ] && [ -d ~/.local/share/applications ]; then
+	rm -f ~/.local/share/applications/faster-project-plus-$FPPVERSION.desktop # remove old shortcut
+	rm -f ~/Desktop/faster-project-plus-$FPPVERSION.desktop
+	touch ~/.local/share/applications/faster-project-plus-$FPPVERSION.desktop # fixes very rare tee bug?
+	EXEPATH="$(pwd)/bin"
+	FPPNAME="Faster Project Plus $FPPVERSION"
+	echo "[Desktop Entry]
+Type=Application
+GenericName=Wii/GameCube Emulator
+Comment=Ishiiruka fork for SSBPM
+Categories=Emulator;Game;
+Icon=$EXEPATH/dolphin-emu.png
+Keywords=ProjectM;Project M;ProjectPlus;Project Plus;Project+
+Version=$FPPVERSION
+Name=$FPPNAME
+Exec=$EXEPATH/dolphin-emu" | tee ~/.local/share/applications/faster-project-plus-$FPPVERSION.desktop > /dev/null
+	cp ~/.local/share/applications/faster-project-plus-$FPPVERSION.desktop ~/Desktop
+	chmod +x ~/Desktop/faster-project-plus-$FPPVERSION.desktop
+else
+	echo ".local folder not found, skipping desktop shortcut."
+fi
+# ---
+
+echo ""
+echo "***************************************************************************************************"
+echo "Done! Run ./launch-fpp to run the latest installed version!"
+echo "Alternatively, go to Application > Games or your desktop and select the desired version."
+echo "Make sure to unplug and replug your adapter before opening Dolphin if adapter rules were installed!"
+echo "***************************************************************************************************"
