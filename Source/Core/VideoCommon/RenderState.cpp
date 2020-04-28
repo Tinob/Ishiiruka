@@ -16,20 +16,24 @@ void RasterizationState::Generate(const BPMemory& bp, PrimitiveType primitive_ty
     cullmode = GenMode::CullMode::CULL_NONE;
     break;
   case HostCullMode::NoCullExceptAll:
-    cullmode = (bp.genMode.cullmode.Value() == GenMode::CullMode::CULL_ALL) ? GenMode::CullMode::CULL_ALL : GenMode::CullMode::CULL_NONE;
+    cullmode = (bp.genMode.cullmode.Value() == GenMode::CullMode::CULL_ALL) ?
+                   GenMode::CullMode::CULL_ALL :
+                   GenMode::CullMode::CULL_NONE;
     break;
   case HostCullMode::FrontNoBlending:
-    cullmode = (bp.blendmode.blendenable.Value()
-      || bp.blendmode.subtract.Value()
-      || bp.dstalpha.enable) ? bp.genMode.cullmode.Value() : GenMode::CullMode::CULL_FRONT;
+    cullmode =
+        (bp.blendmode.blendenable.Value() || bp.blendmode.subtract.Value() || bp.dstalpha.enable) ?
+            bp.genMode.cullmode.Value() :
+            GenMode::CullMode::CULL_FRONT;
     break;
   case HostCullMode::Front:
     cullmode = GenMode::CullMode::CULL_FRONT;
     break;
   case HostCullMode::BackNoBlending:
-    cullmode = (bp.blendmode.blendenable.Value()
-      || bp.blendmode.subtract.Value()
-      || bp.dstalpha.enable) ? bp.genMode.cullmode.Value() : GenMode::CullMode::CULL_BACK;
+    cullmode =
+        (bp.blendmode.blendenable.Value() || bp.blendmode.subtract.Value() || bp.dstalpha.enable) ?
+            bp.genMode.cullmode.Value() :
+            GenMode::CullMode::CULL_BACK;
     break;
   case HostCullMode::Back:
     cullmode = GenMode::CullMode::CULL_BACK;
@@ -38,7 +42,7 @@ void RasterizationState::Generate(const BPMemory& bp, PrimitiveType primitive_ty
     cullmode = bp.genMode.cullmode;
     break;
   }
-  
+
   primitive = primitive_type;
 
   // Back-face culling should be disabled for points/lines.
@@ -165,6 +169,13 @@ void BlendingState::Generate(const BPMemory& bp)
       srcfactoralpha = BlendMode::ONE;
       dstfactoralpha = BlendMode::ZERO;
     }
+    else if (srcfactor == BlendMode::ONE && srcfactoralpha == BlendMode::ONE &&
+             dstfactor == BlendMode::ZERO && dstalpha == BlendMode::ZERO)
+    {
+      blendenable = false;
+      srcfactor = BlendMode::ZERO;
+      srcfactoralpha = BlendMode::ZERO;
+    }
   }
 
   // The logicop bit has the lowest priority
@@ -214,7 +225,7 @@ void SamplerState::Generate(const BPMemory& bp, u32 index)
 
   // Address modes
   static constexpr std::array<AddressMode, 4> address_modes = {
-    { AddressMode::Clamp, AddressMode::Repeat, AddressMode::MirroredRepeat, AddressMode::Repeat } };
+      {AddressMode::Clamp, AddressMode::Repeat, AddressMode::MirroredRepeat, AddressMode::Repeat}};
   wrap_u = address_modes[tm0.wrap_s];
   wrap_v = address_modes[tm0.wrap_t];
   anisotropic_filtering = 0;
@@ -288,4 +299,4 @@ SamplerState GetLinearSamplerState()
   state.anisotropic_filtering = false;
   return state;
 }
-}
+}  // namespace RenderState

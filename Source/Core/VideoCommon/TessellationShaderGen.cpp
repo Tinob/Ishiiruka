@@ -220,8 +220,14 @@ void GetTessellationShaderUID(TessellationShaderUid& out, const XFMemory& xfr, c
     }
   }
   uid_data.nIndirectStagesUsed = nIndirectStagesUsed;
-  bool enable_pl =
-      g_ActiveConfig.PixelLightingEnabled(xfr, components) || g_ActiveConfig.bForcedLighting;
+  bool forced_lighting_enabled =
+      g_ActiveConfig.TessellationEnabled() &&  // forced ligthing only works using tesselation
+      !(bpm.blendmode.blendenable && bpm.blendmode.srcfactor == BlendMode::ONE &&
+        bpm.blendmode.dstfactor ==
+            BlendMode::ONE) &&  // disable while blending to avoid issues with aditive lighting
+      xfr.projection.type == GX_PERSPECTIVE &&  // don't apply ligth to 2d screens
+      g_ActiveConfig.bForcedLighting;
+  bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || forced_lighting_enabled;
   uid_data.pixel_lighting = enable_pl;
   bool enablenormalmaps = g_ActiveConfig.HiresMaterialMapsEnabled() && numTexgen > 0;
   if (enablenormalmaps)
@@ -262,12 +268,15 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n,
 {
   const auto& stage = uid_data.stagehash[n];
   u32 texcoord = stage.tevorders_texcoord;
+  
   bool bHasTexCoord = texcoord < uid_data.numTexGens;
   bool bHasIndStage = stage.hasindstage && stage.tevorders_enable;
-
+  u32 numTexgen = uid_data.numTexGens;
   TevStageIndirect tevind;
   tevind.hex = stage.tevind;
-  int texmap = stage.tevorders_texmap;
+  u32 texmap = stage.tevorders_texmap;
+  texmap = texmap >= numTexgen ? 0 : texmap;
+  texcoord = texcoord >= numTexgen ? 0 : texcoord;
   out.Write("\n{\n");
   if (bHasIndStage)
   {
@@ -633,6 +642,7 @@ inline void GenerateTessellationShader(ShaderCode& out,
         {
           u32 texcoord = uid_data.GetTevindirefCoord(i);
           u32 texmap = uid_data.GetTevindirefMap(i);
+          texmap = texmap >= numTexgen ? numTexgen - 1 : texmap;
           if (texcoord < numTexgen)
           {
             out.Write("   t_coord = BSHR(int2(uv[%d].xy) , " I_INDTEXSCALE "[%d].%s);\n", texcoord,
@@ -643,8 +653,7 @@ inline void GenerateTessellationShader(ShaderCode& out,
             out.Write("   t_coord = int2(0,0);\n");
           }
           out.Write("   int3 indtex%d = ", i);
-          SampleTexture<ApiType>(out, "float2(t_coord)", "abg",
-                                 texmap >= numTexgen ? numTexgen - 1 : texmap);
+          SampleTexture<ApiType>(out, "float2(t_coord)", "abg", texmap);
         }
       }
       for (u32 i = 0; i < numStages; ++i)

@@ -26,7 +26,13 @@ void GetVertexShaderUID(VertexShaderUid& out, u32 components, const XFMemory &xf
   uid_data.numTexGens = xfr.numTexGen.numTexGens;
   uid_data.components = components;
   bool lightingEnabled = xfr.numChan.numColorChans > 0;
-  bool forced_lighting_enabled = g_ActiveConfig.TessellationEnabled() && xfr.projection.type == GX_PERSPECTIVE && g_ActiveConfig.bForcedLighting;
+  bool forced_lighting_enabled =
+      g_ActiveConfig.TessellationEnabled() &&  // forced ligthing only works using tesselation
+      !(bpm.blendmode.blendenable &&
+        bpm.blendmode.srcfactor == BlendMode::ONE &&
+        bpm.blendmode.dstfactor == BlendMode::ONE) &&  // disable while blending to avoid issues with aditive lighting
+      xfr.projection.type == GX_PERSPECTIVE &&  // don't apply ligth to 2d screens
+      g_ActiveConfig.bForcedLighting;
   bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || forced_lighting_enabled;
   bool needLightShader = lightingEnabled && !enable_pl;
   for (unsigned int i = 0; i < uid_data.numTexGens; ++i)

@@ -454,9 +454,13 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
       bpm.zmode.testenable.Value() &&
       ((bpm.ztex2.op.Value() != ZTEXTURE_DISABLE && bpm.UseLateDepthTest()) ||
        (!g_ActiveConfig.bFastDepthCalc && !forced_early_z) || bpm.genMode.zfreeze.Value());
-  bool forced_lighting_enabled = g_ActiveConfig.TessellationEnabled() &&
-                                 xfr.projection.type == GX_PERSPECTIVE &&
-                                 g_ActiveConfig.bForcedLighting;
+  bool forced_lighting_enabled =
+      g_ActiveConfig.TessellationEnabled() &&  // forced ligthing only works using tesselation
+      !(bpm.blendmode.blendenable && bpm.blendmode.srcfactor == BlendMode::ONE &&
+        bpm.blendmode.dstfactor ==
+            BlendMode::ONE) &&  // disable while blending to avoid issues with aditive lighting
+      xfr.projection.type == GX_PERSPECTIVE &&  // don't apply ligth to 2d screens
+      g_ActiveConfig.bForcedLighting;
   bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || forced_lighting_enabled;
   // uid_data.uint_output = bpm.blendmode.UseLogicOp() && g_ActiveConfig.backend_info.APIType ==
   // API_D3D11 ? 1 : 0;
@@ -545,7 +549,6 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
     // Only col0 and col1 are needed so discard the remaining components
     uid_data.components = (components >> VB_COL_SHIFT) & 3;
     uid_data.numColorChans = xfr.numChan.numColorChans;
-    GetLightingShaderUid(uid_data.lighting, xfr);
     GetLightingShaderUid(uid_data.lighting, xfr);
   }
 
@@ -2184,8 +2187,8 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
       }
       else if (ApiType & API_OPENGL || ApiType & API_VULKAN)
       {
-        out.Write(
-            "textureLod(envtex, reflect(-View.xyz, _norm0.xyz).xyz, (1.0 - (normalmap.w * normalmap.w * normalmap.w)) * 10.0);\n");
+        out.Write("textureLod(envtex, reflect(-View.xyz, _norm0.xyz).xyz, (1.0 - (normalmap.w * "
+                  "normalmap.w * normalmap.w)) * 10.0);\n");
       }
       // Env component
       out.Write("prev.rgb += wu3((prev.rgb / 255.0f) * envcolor.rgb * 255.0 * normalmap.w);\n");
