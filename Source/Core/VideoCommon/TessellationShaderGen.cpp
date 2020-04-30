@@ -222,9 +222,6 @@ void GetTessellationShaderUID(TessellationShaderUid& out, const XFMemory& xfr, c
   uid_data.nIndirectStagesUsed = nIndirectStagesUsed;
   bool forced_lighting_enabled =
       g_ActiveConfig.TessellationEnabled() &&  // forced ligthing only works using tesselation
-      !(bpm.blendmode.blendenable && bpm.blendmode.srcfactor == BlendMode::ONE &&
-        bpm.blendmode.dstfactor ==
-            BlendMode::ONE) &&  // disable while blending to avoid issues with aditive lighting
       xfr.projection.type == GX_PERSPECTIVE &&  // don't apply ligth to 2d screens
       g_ActiveConfig.bForcedLighting;
   bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || forced_lighting_enabled;

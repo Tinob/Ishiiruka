@@ -455,10 +455,7 @@ void GetPixelShaderUID(PixelShaderUid& out, PIXEL_SHADER_RENDER_MODE render_mode
       ((bpm.ztex2.op.Value() != ZTEXTURE_DISABLE && bpm.UseLateDepthTest()) ||
        (!g_ActiveConfig.bFastDepthCalc && !forced_early_z) || bpm.genMode.zfreeze.Value());
   bool forced_lighting_enabled =
-      g_ActiveConfig.TessellationEnabled() &&  // forced ligthing only works using tesselation
-      !(bpm.blendmode.blendenable && bpm.blendmode.srcfactor == BlendMode::ONE &&
-        bpm.blendmode.dstfactor ==
-            BlendMode::ONE) &&  // disable while blending to avoid issues with aditive lighting
+      g_ActiveConfig.TessellationEnabled() &&   // forced ligthing only works using tesselation
       xfr.projection.type == GX_PERSPECTIVE &&  // don't apply ligth to 2d screens
       g_ActiveConfig.bForcedLighting;
   bool enable_pl = g_ActiveConfig.PixelLightingEnabled(xfr, components) || forced_lighting_enabled;
