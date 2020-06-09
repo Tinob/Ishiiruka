@@ -5,9 +5,9 @@
     <style name="DolphinBase" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Main theme colors -->
         <!-- Branding color for the app bar -->
-        <item name="colorPrimary">@color/dolphin_blue</item>
+        <item name="colorPrimary">@color/ishiiruka_red</item>
         <!-- Darker variant for the status bar and contextual app bars -->
-        <item name="colorPrimaryDark">@color/dolphin_blue_dark</item>
+        <item name="colorPrimaryDark">@color/ishiiruka_red_dark</item>
 
         <!-- Enable window content transitions -->
         <item name="android:windowContentTransitions">true</item>
@@ -19,8 +19,8 @@
 
     <!-- Same as above, but use default action bar, and mandate margins. -->
     <style name="DolphinSettingsBase" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">@color/dolphin_blue</item>
-        <item name="colorPrimaryDark">@color/dolphin_blue_dark</item>
+        <item name="colorPrimary">@color/ishiiruka_red</item>
+        <item name="colorPrimaryDark">@color/ishiiruka_red_dark</item>
     </style>
 
     <!-- Inherit from the Base Dolphin Theme -->
@@ -56,8 +56,8 @@
     <!-- Inherit from the Base Dolphin Dialog Theme -->
 
     <style name="DolphinEmulationBase" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">@color/dolphin_blue</item>
-        <item name="colorPrimaryDark">@color/dolphin_blue_dark</item>
+        <item name="colorPrimary">@color/ishiiruka_red</item>
+        <item name="colorPrimaryDark">@color/ishiiruka_red_dark</item>
         <item name="android:windowTranslucentNavigation">true</item>
 
         <item name="android:windowBackground">@android:color/black</item>
@@ -82,8 +82,8 @@
     </style>
 
     <style name="DolphinEmulationTvBase" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/dolphin_blue</item>
-        <item name="colorPrimaryDark">@color/dolphin_blue_dark</item>
+        <item name="colorPrimary">@color/ishiiruka_red</item>
+        <item name="colorPrimaryDark">@color/ishiiruka_red_dark</item>
         <item name="android:windowTranslucentNavigation">true</item>
 
         <item name="android:windowBackground">@android:color/black</item>
@@ -114,8 +114,8 @@
 
     <!-- Android TV Themes -->
     <style name="DolphinTvBase" parent="Theme.Leanback.Browse">
-        <item name="colorPrimary">@color/dolphin_blue</item>
-        <item name="colorPrimaryDark">@color/dolphin_blue_dark</item>
+        <item name="colorPrimary">@color/ishiiruka_red</item>
+        <item name="colorPrimaryDark">@color/ishiiruka_red_dark</item>
 
         <!-- Enable window content transitions -->
         <item name="android:windowContentTransitions">true</item>
@@ -147,8 +147,8 @@
 
     <!-- You can also inherit from NNF_BaseTheme.Light -->
     <style name="FilePickerTheme" parent="NNF_BaseTheme.Light">
-        <item name="colorPrimary">@color/dolphin_blue</item>
-        <item name="colorPrimaryDark">@color/dolphin_blue_dark</item>
+        <item name="colorPrimary">@color/ishiiruka_red</item>
+        <item name="colorPrimaryDark">@color/ishiiruka_red_dark</item>
         <item name="colorAccent">@color/dolphin_accent_gamecube</item>
 
         <!--&lt;!&ndash; Setting a divider is entirely optional &ndash;&gt;-->
@@ -163,8 +163,8 @@
     </style>
 
     <style name="FilePickerAlertDialogTheme" parent="Theme.AppCompat.Dialog.Alert">
-        <item name="colorPrimary">@color/dolphin_blue</item>
-        <item name="colorPrimaryDark">@color/dolphin_blue_dark</item>
+        <item name="colorPrimary">@color/ishiiruka_red</item>
+        <item name="colorPrimaryDark">@color/ishiiruka_red_dark</item>
         <item name="colorAccent">@color/dolphin_accent_gamecube</item>
     </style>
 

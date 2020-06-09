@@ -14,7 +14,8 @@
 
 static bool RoundTrippableDissassemble(const std::vector<u16>& code, std::string& text)
 {
-  DSP::AssemblerSettings settings;
+    return false;
+ /*DSP::AssemblerSettings settings;
   settings.ext_separator = '\'';
   settings.decode_names = true;
   settings.decode_registers = true;
@@ -23,7 +24,7 @@ static bool RoundTrippableDissassemble(const std::vector<u16>& code, std::string
   settings.show_pc = false;
   DSP::DSPDisassembler disasm(settings);
 
-  return disasm.Disassemble(0x0000, code, 0x0000, text);
+  return disasm.Disassemble(0x0000, code, 0x0000, text);*/
 }
 
 // This test goes from text ASM to binary to text ASM and once again back to binary.

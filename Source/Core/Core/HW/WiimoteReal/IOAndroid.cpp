@@ -119,7 +119,7 @@ void InitAdapterClass()
   JNIEnv* env;
   g_java_vm->AttachCurrentThread(&env, nullptr);
 
-  jclass adapter_class = env->FindClass("org/dolphinemu/dolphinemu/utils/Java_WiimoteAdapter");
+  jclass adapter_class = env->FindClass("org/dolphinemu/ishiiruka/utils/Java_WiimoteAdapter");
   s_adapter_class = reinterpret_cast<jclass>(env->NewGlobalRef(adapter_class));
 }
 }

@@ -61,7 +61,6 @@ struct GXPipelineState
   DepthState zmode;
   RasterizationState raster;
 };
-
 static GXPipelineState s_gx_state;
 
 // Declarations and definitions
@@ -231,8 +230,7 @@ static void InitDriverInfo()
   // Get device family and driver version...if we care about it
   switch (vendor)
   {
-  case DriverDetails::VENDOR_QUALCOMM:
-  {
+  case DriverDetails::VENDOR_QUALCOMM: {
     driver = DriverDetails::DRIVER_QUALCOMM;
     double glVersion;
     sscanf(g_ogl_config.gl_version, "OpenGL ES %lg V@%lg", &glVersion, &version);
@@ -257,8 +255,7 @@ static void InitDriverInfo()
     else
       version = 300;
     break;
-  case DriverDetails::VENDOR_MESA:
-  {
+  case DriverDetails::VENDOR_MESA: {
     if (svendor == "nouveau")
     {
       driver = DriverDetails::DRIVER_NOUVEAU;
@@ -317,8 +314,7 @@ static void InitDriverInfo()
 #endif
   }
   break;
-  case DriverDetails::VENDOR_NVIDIA:
-  {
+  case DriverDetails::VENDOR_NVIDIA: {
     int glmajor = 0;
     int glminor = 0;
     int glrelease = 0;
@@ -332,8 +328,7 @@ static void InitDriverInfo()
     version = 100 * major + minor;
   }
   break;
-  case DriverDetails::VENDOR_IMGTEC:
-  {
+  case DriverDetails::VENDOR_IMGTEC: {
     // Example version string:
     // "OpenGL ES 3.2 build 1.9@4850625"
     // Ends up as "109.4850625" - "1.9" being the branch, "4850625" being the build's change ID
@@ -1007,8 +1002,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
   // TODO (FIX) : currently, AA path is broken/offset and doesn't return the correct pixel
   switch (type)
   {
-  case EFBAccessType::PeekZ:
-  {
+  case EFBAccessType::PeekZ: {
     if (!s_efbCacheValid[0][cacheRectIdx])
     {
       if (s_MSAASamples > 1)
@@ -1453,13 +1447,13 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
   OSD::DrawMessages();
 
 #ifdef ANDROID
-  if (s_surface_needs_change.IsSet())
+  if (m_surface_needs_change.IsSet())
   {
-    GLInterface->UpdateHandle(s_new_surface_handle);
+    GLInterface->UpdateHandle(m_new_surface_handle);
     GLInterface->UpdateSurface();
-    s_new_surface_handle = nullptr;
-    s_surface_needs_change.Clear();
-    s_surface_changed.Set();
+    m_surface_needs_change.Clear();
+    m_new_surface_handle = nullptr;
+    m_surface_changed.Set();
   }
 #endif
 
@@ -2130,9 +2124,9 @@ void Renderer::ChangeSurface(void* new_surface_handle)
   // This is only necessary for Android at this point, although handling resizes here
   // would be more efficient than polling.
 #ifdef ANDROID
-  s_new_surface_handle = new_surface_handle;
-  s_surface_needs_change.Set();
-  s_surface_changed.Wait();
+  m_new_surface_handle = new_surface_handle;
+  m_surface_changed.Set();
+  m_surface_needs_change.Set();
 #endif
 }
 }  // namespace OGL

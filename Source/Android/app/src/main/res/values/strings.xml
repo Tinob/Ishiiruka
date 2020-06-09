@@ -2,7 +2,7 @@
 <resources>
 
     <!-- Title of the app -->
-    <string name="app_name">Dolphin Emulator</string>
+    <string name="app_name">Ishiiruka Emulator</string>
 
     <!-- WARNING Do not move these controller entries AT ALL COSTS! They are indexed with ints, and an assumption
             is made that they are placed together so that we can access them sequentially in a loop. -->
@@ -149,6 +149,8 @@
     <string name="force_texture_filtering_descrip">Force texture filtering even if the emulated game explicitly disabled it. Improves texture quality slightly but causes glitches in some games.</string>
     <string name="disable_fog">Disable Fog</string>
     <string name="disable_fog_descrip">Makes distant objects more visible by removing fog, thus increasing the overall detail. Disabling fog will break some games which rely on proper fog emulation.</string>
+    <string name="widescreen_hack">Widescreen Hack</string>
+    <string name="widescreen_hack_desc">Force the game to output graphics for widescreen resolutions. Can cause glitches</string>
     <string name="stereoscopy">Stereoscopy</string>
     <string name="stereoscopy_descrip">Stereoscopy allows you to get a better feeling of depth if you have the necessary hardware.\nHeavily decreases emulation speed and sometimes causes issues</string>
     <string name="stereoscopy_mode">Stereoscopy Mode</string>
@@ -163,7 +165,9 @@
     <string name="hacks">Hacks</string>
     <string name="embedded_frame_buffer">Embedded Frame Buffer</string>
     <string name="skip_efb_access">Skip EFB Access from CPU</string>
+    <string name="fast_efb_access">Fast EFB Access from CPU</string>
     <string name="skip_efb_access_descrip">Ignore any requests from the CPU to read/write to the EFB.</string>
+    <string name="fast_efb_access_descrip">Inaccurate but faster efb access algorithm.</string>
     <string name="ignore_format_changes">Ignore Format Changes</string>
     <string name="ignore_format_changes_descrip">Ignore any changes to the EFB format.</string>
     <string name="efb_copy_method">Store EFB Copies to Texture Only</string>
@@ -174,18 +178,20 @@
     <string name="gpu_texture_decoding">GPU Texture Decoding</string>
     <string name="gpu_texture_decoding_descrip">Decodes textures on the GPU using compute shaders where supported. May improve performance in some scenarios.</string>
     <string name="external_frame_buffer">External Frame Buffer</string>
-    <string name="xfb_copy_method">Store XFB Copies to Texture Only</string>
-    <string name="xfb_copy_method_descrip">Stores XFB Copies exclusively on the GPU, bypassing system memory. Causes graphical defects in a small number of games that need to readback from memory. If unsure, leave this checked.</string>
-    <string name="immediate_xfb">Immediately Present XFB</string>
-    <string name="immediate_xfb_descrip">Displays the XFB copies as soon as they are created, without waiting for scanout. Causes graphical defects in some games but reduces latency. If unsure, leave this unchecked.</string>
+    <string name="xfb_enable">Enable xfb emulation</string>
+    <string name="xfb_enable_descrip">Emulates xfb functionality, needed by some games to work correctly.</string>
+    <string name="real_xfb">XFB to Memory</string>
+    <string name="real_xfb_descrip">Copy XFB contents to memory to emulate real hardware. needed by some games but slower.</string>
     <string name="disable_destination_alpha">Disable Destination Alpha</string>
     <string name="disable_destination_alpha_descrip">Disables emulation of a hardware feature called destination alpha, which is used in many games for various effects.</string>
     <string name="fast_depth_calculation">Fast Depth Calculation</string>
     <string name="fast_depth_calculation_descrip">Uses a less accurate algorithm to calculate depth values.</string>
     <string name="aspect_ratio">Aspect Ratio</string>
     <string name="aspect_ratio_descrip">Select what aspect ratio to use when rendering</string>
-    <string name="shader_compilation_mode">Shader Compilation Mode</string>
-    <string name="shader_compilation_mode_descrip">Specifies when to use Ubershaders. Disabled - Never, Hybrid - Use ubershaders while compiling specialized shaders. Exclusive - Use only ubershaders, largest performance impact. Skip Drawing - Do not draw objects while shaders are compiling, will cause broken effects.</string>
+    <string name="shader_background_compilation">Enable Ubershaders</string>
+    <string name="shader_background_compilation_descrip">Specifies when to use Ubershaders.</string>
+    <string name="shader_disable_specialized">Disable Specialized Shaders</string>
+    <string name="shader_disable_specialized_descrip">Specifies That only Ubershaders should be used and no specialized shader should be compiled.</string>
     <string name="wait_for_shaders">Compile Shaders Before Starting</string>
 
     <!-- Miscellaneous -->

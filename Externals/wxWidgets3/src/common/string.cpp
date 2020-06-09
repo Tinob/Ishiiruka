@@ -207,7 +207,7 @@ wxSTD ostream& operator<<(wxSTD ostream& os, const wxScopedCharBuffer& str)
     return os << str.data();
 }
 
-#ifndef __BORLANDC__
+#if !defined(__BORLANDC__) && (!defined(_MSC_VER) || (defined(_MSC_VER) && _MSC_VER < 1926)) 
 wxSTD ostream& operator<<(wxSTD ostream& os, const wxScopedWCharBuffer& str)
 {
     return os << str.data();

@@ -30,7 +30,7 @@ int2 BSH(int2 x, int n)
 }
 int remainder(int x, int y)
 {
-	return x %% y;
+	return x % y;
 }
 // dot product for integer vectors
 int idot(int3 x, int3 y)
@@ -265,7 +265,7 @@ inline void WriteFetchDisplacement(ShaderCode& out, int n,
 {
   const auto& stage = uid_data.stagehash[n];
   u32 texcoord = stage.tevorders_texcoord;
-  
+
   bool bHasTexCoord = texcoord < uid_data.numTexGens;
   bool bHasIndStage = stage.hasindstage && stage.tevorders_enable;
   u32 numTexgen = uid_data.numTexGens;
@@ -427,7 +427,7 @@ inline void GenerateTessellationShader(ShaderCode& out,
       out.Write("SamplerState samp[8] : register(s0);\n");
       out.Write("Texture2DArray Tex[8] : register(t0);\n");
     }
-    out.Write(headerUtilI);
+    out.Write("%s", headerUtilI);
   }
   // uniforms
   if (ApiType == API_OPENGL)
@@ -489,7 +489,7 @@ inline void GenerateTessellationShader(ShaderCode& out,
       out.Write(" float4 tex%d[3] : TEXCOORD%d;\n", i, i * 3 + 1);
     out.Write(" float4 Normal[3]: TEXCOORD%d;\n", texcount * 3 + 1);
     out.Write("};\n");
-    out.Write(s_hlsl_hull_header_str);
+    out.Write("%s", s_hlsl_hull_header_str);
     if (uid_data.numTexGens < 7)
     {
       out.Write(" result.pos = float4(patch[id].clipPos.x,patch[id].clipPos.y,patch[id].Normal.w, "
@@ -505,7 +505,7 @@ inline void GenerateTessellationShader(ShaderCode& out,
     if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
       out.Write("result.clipDist = patch[id].clipDist;\n");
     out.Write("return result;\n}\n");
-    out.Write(s_hlsl_constant_header_str);
+    out.Write("%s", s_hlsl_constant_header_str);
     out.Write(" if (" I_CULLPARAMS ".y != 0) {\n"
               "   float3 spos0 = patch[0].pos.xyz / patch[0].pos.w;\n"
               "   float3 spos1 = patch[1].pos.xyz / patch[1].pos.w;\n"
@@ -594,7 +594,7 @@ inline void GenerateTessellationShader(ShaderCode& out,
         "   result.InsideFactor = (result.EFactor[0] + result.EFactor[1] + result.EFactor[2]) / "
         "3;\n"
         "   return result;\n};\n");
-    out.Write(s_hlsl_ds_str);
+    out.Write("%s", s_hlsl_ds_str);
 
     for (u32 i = 0; i < texcount; ++i)
       out.Write(" result.tex%d.xyz = BInterpolate(pconstans.tex%d, bCoords).xyz;\n", i, i);

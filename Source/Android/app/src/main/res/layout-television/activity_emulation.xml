@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <org.dolphinemu.dolphinemu.ui.NVidiaShieldWorkaroundView
+    <org.dolphinemu.ishiiruka.ui.NVidiaShieldWorkaroundView
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 

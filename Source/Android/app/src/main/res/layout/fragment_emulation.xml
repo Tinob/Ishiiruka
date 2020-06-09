@@ -3,7 +3,7 @@
              android:layout_width="match_parent"
              android:layout_height="match_parent"
              android:keepScreenOn="true"
-             tools:context="org.dolphinemu.dolphinemu.fragments.EmulationFragment">
+             tools:context="org.dolphinemu.ishiiruka.fragments.EmulationFragment">
 
     <!-- This is what everything is rendered to during emulation -->
     <SurfaceView
@@ -14,7 +14,7 @@
         android:focusableInTouchMode="false"/>
 
     <!-- This is the onscreen input overlay -->
-    <org.dolphinemu.dolphinemu.overlay.InputOverlay
+    <org.dolphinemu.ishiiruka.overlay.InputOverlay
         android:id="@+id/surface_input_overlay"
         android:layout_height="match_parent"
         android:layout_width="match_parent"
@@ -27,7 +27,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:padding="@dimen/spacing_small"
-        android:background="@color/dolphin_blue"
+        android:background="@color/ishiiruka_red"
         android:textColor="@color/lb_tv_white"
         android:text="@string/emulation_done"
         android:visibility="gone"/>

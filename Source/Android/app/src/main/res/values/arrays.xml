@@ -91,36 +91,30 @@
         <item>0</item>
     </integer-array>
 
-    <!-- Ubershader Mode Preference -->
-    <string-array name="shaderCompilationModeEntries" translatable="false">
-        <item>Synchronous</item>
-        <item>Synchronous (Ubershaders)</item>
-        <item>Asynchronous (Ubershaders)</item>
-        <item>Asynchronous (Skip Drawing)</item>
-    </string-array>
-    <integer-array name="shaderCompilationModeValues" translatable="false">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-    </integer-array>
-
     <!-- Internal Resolution Preference -->
     <string-array name="internalResolutionEntries" translatable="false">
+        <item>Auto (fractional)</item>
+        <item>Auto (integral)</item>
         <item>1x Native (640x528)</item>
+        <item>1.5x Native (960x792)</item>
         <item>2x Native (1280x1056) for 720p</item>
+        <item>2.5x Native (1600x1320)</item>
         <item>3x Native (1920x1584) for 1080p</item>
         <item>4x Native (2560x2112)</item>
         <item>5x Native (3200x2640)</item>
         <item>6x Native (3840x3168) for 4K</item>
     </string-array>
     <integer-array name="internalResolutionValues" translatable="false">
+        <item>0</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
         <item>4</item>
         <item>5</item>
         <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
     </integer-array>
 
     <!-- FSAA Preference -->
@@ -168,15 +162,21 @@
     <!-- Aspect Ratio Preference -->
     <string-array name="aspectRatioEntries" translatable="false">
         <item>Auto</item>
-        <item>Force 16:9</item>
-        <item>Force 4:3</item>
+        <item>Force Analog 16:9</item>
+        <item>Force Analog 4:3</item>
         <item>Stretch To Window</item>
+        <item>Force 4:3</item>
+        <item>Force 16:9</item>
+        <item>Force 16:10</item>
     </string-array>
     <integer-array name="aspectRatioValues" translatable="false">
         <item>0</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
     </integer-array>
 
     <string-array name="countryNames">

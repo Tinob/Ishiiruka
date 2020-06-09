@@ -206,7 +206,7 @@ void Init()
   JNIEnv* env;
   g_java_vm->AttachCurrentThread(&env, NULL);
 
-  jclass adapter_class = env->FindClass("org/dolphinemu/dolphinemu/utils/Java_GCAdapter");
+  jclass adapter_class = env->FindClass("org/dolphinemu/ishiiruka/utils/Java_GCAdapter");
   s_adapter_class = reinterpret_cast<jclass>(env->NewGlobalRef(adapter_class));
 
   if (UseAdapter())

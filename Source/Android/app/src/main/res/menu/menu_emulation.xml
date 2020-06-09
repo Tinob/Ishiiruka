@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:tools="http://schemas.android.com/tools"
       xmlns:app="http://schemas.android.com/apk/res-auto"
-      tools:context="org.dolphinemu.dolphinemu.activities.EmulationActivity">
+      tools:context="org.dolphinemu.ishiiruka.activities.EmulationActivity">
 
     <item
         android:id="@+id/menu_emulation_screenshot"

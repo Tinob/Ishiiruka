@@ -31,7 +31,6 @@ class PerfQueryBase
 {
 public:
   PerfQueryBase()
-    : m_query_count(0)
   {}
 
   virtual ~PerfQueryBase()
@@ -73,7 +72,7 @@ public:
 
 protected:
   // TODO: sloppy
-  volatile u32 m_query_count;
+  volatile u32 m_query_count{};
   volatile u32 m_results[PQG_NUM_MEMBERS];
 };
 

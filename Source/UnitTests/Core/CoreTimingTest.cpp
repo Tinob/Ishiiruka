@@ -9,13 +9,12 @@
 #include <string>
 
 #include "Common/FileUtil.h"
-#include "Core/Config/Config.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Core/PowerPC/PowerPC.h"
 #include "UICommon/UICommon.h"
-
+/*
 // Numbers are chosen randomly to make sure the correct one is given.
 static constexpr std::array<u64, 5> CB_IDS{{42, 144, 93, 1026, UINT64_C(0xFFFF7FFFF7FFFF)}};
 static constexpr int MAX_SLICE_LENGTH = 20000;  // Copied from CoreTiming internals
@@ -346,3 +345,4 @@ TEST(CoreTiming, Overclocking)
   SConfig::GetInstance().m_OCFactor = 1.0;
   AdvanceAndCheck(4, MAX_SLICE_LENGTH);
 }
+*/

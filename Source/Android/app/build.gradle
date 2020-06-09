@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '27.0.3'
+    compileSdkVersion 29
+    buildToolsVersion '29.0.2'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -21,23 +21,25 @@ android {
 
     defaultConfig {
         // TODO If this is ever modified, change application_id in strings.xml
-        applicationId "org.dolphinemu.dolphinemu"
+        applicationId "org.dolphinemu.ishiiruka"
         minSdkVersion 21
-        targetSdkVersion 25
+        targetSdkVersion 29
 
         versionCode(getBuildVersionCode())
 
         versionName "${getVersion()}"
     }
 
+    def keystorePropertiesFile = rootProject.file("../../../keystore.properties")
+    def keystoreProperties = new Properties()
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
     signingConfigs {
         release {
-            if (project.hasProperty('keystore')) {
-                storeFile file(project.property('keystore'))
-                storePassword project.property('storepass')
-                keyAlias project.property('keyalias')
-                keyPassword project.property('keypass')
-            }
+            storeFile file(keystoreProperties['keystore'])
+            storePassword keystoreProperties['storepass']
+            keyAlias keystoreProperties['keyalias']
+            keyPassword keystoreProperties['keypass']
         }
     }
 
@@ -63,6 +65,7 @@ android {
             path "../../../CMakeLists.txt"
         }
     }
+    ndkVersion '21.0.6113669'
 
     defaultConfig {
         externalNativeBuild {

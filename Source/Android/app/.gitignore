@@ -1,2 +1,5 @@
 /build
 /.externalNativeBuild
+/.cxx
+/Debug
+/Release
