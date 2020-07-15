@@ -157,16 +157,16 @@ static wxString pixel_lighting_desc =
     _("Calculate lighting of 3D graphics per-pixel rather than per vertex.\nDecreases emulation "
       "speed by some percent (depending on your GPU).\nThis usually is a safe enhancement, but "
       "might cause issues sometimes.\n\nIf unsure, leave this unchecked.");
-static wxString phong_lighting_desc = _("Use Phong specular model when pixel ligthing is enabled.");
+static wxString phong_lighting_desc = _("Use Phong specular model when pixel lighting is enabled.");
 static wxString phong_intensity_desc = _("Controls Global intensity of specular reflection.");
 static wxString rim_intensity_desc = _("Controls Intensity of rim effect.");
 static wxString rim_power_desc = _("Controls exponent of rim effect.");
-static wxString rim_base_desc = _("Controls minimun rim color.");
-static wxString bump_desc = _("Enable generation of bumpmaps to improve ligthing effects.");
+static wxString rim_base_desc = _("Controls minimum rim color.");
+static wxString bump_desc = _("Enable generation of bumpmaps to improve lighting effects.");
 static wxString bump_strength_desc = _("Controls strength of simulated bumpmaps. Needs to be "
-                                       "adjusted per game co achive better quality");
+                                       "adjusted per game to acheive better quality");
 static wxString bump_detail_frequency_desc =
-    _("Controls detail bumpmap frequency. This will change the size of the noise pattern");
+    _("Controls detail bumpmap frequency. This will change the size of the noise pattern.");
 static wxString bump_detail_blend_desc =
     _("Controls the detail bumpmap strength. Detail bump will add noise to existing textures.");
 static wxString bump_threshold_desc =
@@ -234,7 +234,7 @@ static wxString hp_frame_buffer_desc =
     _("Forces the game to render using high precision color textures to increase graphic quality "
       "while using post procesing shaders, "
       "can cause small graphical issues.\n\n\nIf unsure, leave this unchecked.");
-static wxString hdr_output_desc = _("it hardware supports it use HDR display capabilities.");
+static wxString hdr_output_desc = _("If hardware supports it, it will use HDR display capabilities.");
 static wxString disable_dstalpha_desc =
     _("Disables emulation of a hardware feature called destination alpha, which is used in many "
       "games for various graphical effects.\n\nIf unsure, leave this unchecked.");
@@ -289,8 +289,8 @@ static wxString predictiveFifo_desc =
 static wxString load_hires_textures_desc = _(
     "Load custom textures from User/Load/Textures/<game_id>/\n\nIf unsure, leave this unchecked.");
 static wxString load_hires_material_maps_desc =
-    _("Load custom material maps from User/Load/Textures/<game_id>/\nUsed to Enable Advanced "
-      "lighting, Requires Pixel Lighting and Hires Textures Enabled\nIf unsure, leave this "
+    _("Load custom material maps from User/Load/Textures/<game_id>/\Needed to Enable Advanced "
+      "lighting, requires Pixel Lighting and Hires Textures Enabled\nIf unsure, leave this "
       "unchecked.");
 static wxString cache_hires_textures_desc =
     _("Cache custom textures to system RAM on startup.\nThis can require exponentially more RAM "
@@ -376,7 +376,7 @@ static wxString Tessellation_desc =
     _("Apply the selected Tessellation levels to increase geometry detail.");
 static wxString Tessellation_forced_lights_desc = _("Force Lighting in all 3d elements.");
 static wxString Tessellation_early_culling_desc =
-    _("Remove surfaces outside the viewport before Tessellation to increase performace. Can cause "
+    _("Remove surfaces outside the viewport before Tessellation to increase performance. Can cause "
       "glitches if the camera is near a surface.");
 static wxString Tessellation_distance_desc =
     _("Decay of Tessellation level in the distance. High values reduce tesselation amounts "
@@ -985,7 +985,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
       max_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_TessellationMax, this);
       RegisterControl(max_slider, (Tessellation_max_desc));
 
-      szr_tessellation->Add(new wxStaticText(page_enh, wxID_ANY, _("Maximun Detail:")), 1,
+      szr_tessellation->Add(new wxStaticText(page_enh, wxID_ANY, _("Maximum Detail:")), 1,
                             wxALIGN_CENTER_VERTICAL, 0);
       szr_tessellation->Add(max_slider, 1, wxEXPAND | wxRIGHT);
 
