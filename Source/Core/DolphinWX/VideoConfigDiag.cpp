@@ -289,7 +289,7 @@ static wxString predictiveFifo_desc =
 static wxString load_hires_textures_desc = _(
     "Load custom textures from User/Load/Textures/<game_id>/\n\nIf unsure, leave this unchecked.");
 static wxString load_hires_material_maps_desc =
-    _("Load custom material maps from User/Load/Textures/<game_id>/\Needed to Enable Advanced "
+    _("Load custom material maps from User/Load/Textures/<game_id>/\nNeeded to Enable Advanced "
       "lighting, requires Pixel Lighting and Hires Textures Enabled\nIf unsure, leave this "
       "unchecked.");
 static wxString cache_hires_textures_desc =

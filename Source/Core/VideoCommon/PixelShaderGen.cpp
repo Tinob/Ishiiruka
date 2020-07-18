@@ -1639,7 +1639,7 @@ inline void GeneratePixelShader(ShaderCode& out, const pixel_shader_uid_data& ui
   if (uid_data.dither)
   {
     out.Write("wu GetDitherValue(wu2 ditherindex)\n{\n");
-    out.Write("\twu result = wu(round(2*snoise(0.2*float2(ditherindex.x, ditherindex.y))));\n");
+    out.Write("\twu result = wuround(2.0*snoise(0.2*float2(ditherindex.x, ditherindex.y)));\n");
     out.Write("\treturn result;\n}\n");
   }
   if (ApiType == API_OPENGL || ApiType == API_VULKAN)
