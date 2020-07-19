@@ -1576,6 +1576,11 @@ void CFrame::ParseHotkeys()
     Config::SetCurrent(Config::GFX_HIRES_MATERIAL_MAPS, !Config::Get(Config::GFX_HIRES_MATERIAL_MAPS));
   }
 
+  if (IsHotkey(HK_TOGGLE_POSTPROCESSING))
+  {
+    Config::SetCurrent(Config::GFX_ENHANCE_POST_ENABLED, !Config::Get(Config::GFX_ENHANCE_POST_ENABLED));
+  }
+
   static float debugSpeed = 1.0f;
   if (IsHotkey(HK_FREELOOK_DECREASE_SPEED, true))
     debugSpeed /= 1.1f;
