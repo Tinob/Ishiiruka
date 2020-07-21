@@ -6,6 +6,7 @@
 
 #include <functional>
 #include <optional>
+#include <string>
 
 #include "Common/CommonTypes.h"
 
