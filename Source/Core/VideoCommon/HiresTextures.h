@@ -5,9 +5,12 @@
 #pragma once
 
 #include <functional>
+#include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
 #include "VideoCommon/TextureDecoder.h"
 #include "VideoCommon/VideoCommon.h"
 
@@ -39,8 +42,7 @@ public:
 
 private:
   static void ProccessTexture(const std::string& fileitem, std::string& filename,
-                              const std::string& extension,
-                              const bool BuildMaterialMaps);
+                              const std::string& extension, const bool BuildMaterialMaps);
   static void ProccessEnviroment(const std::string& fileitem, std::string& filename,
                                  const std::string& extension);
   static HiresTexture* Load(const std::string& base_filename,
@@ -51,5 +53,5 @@ private:
 
   static void Prefetch();
   HiresTexture();
-  static std::string GetTextureDirectory(const std::string& game_id);
+  static std::set<std::string> GetTextureDirectory(const std::string& game_id);
 };

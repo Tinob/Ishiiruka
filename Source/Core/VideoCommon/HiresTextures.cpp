@@ -146,15 +146,51 @@ void HiresTexture::Shutdown()
   s_textureCache.clear();
 }
 
-std::string HiresTexture::GetTextureDirectory(const std::string& game_id)
+std::set<std::string> HiresTexture::GetTextureDirectory(const std::string& game_id)
 {
+  std::set<std::string> result;
   const std::string texture_directory = File::GetUserPath(D_HIRESTEXTURES_IDX) + game_id;
 
-  // If there's no directory with the region-specific ID, look for a 3-character region-free one
-  if (!File::Exists(texture_directory))
-    return File::GetUserPath(D_HIRESTEXTURES_IDX) + game_id.substr(0, 3);
+  if (File::Exists(texture_directory))
+  {
+    result.insert(texture_directory);
+  }
+  else
+  {
+    // If there's no directory with the region-specific ID, look for a 3-character region-free one
+    const std::string region_free_directory =
+        File::GetUserPath(D_HIRESTEXTURES_IDX) + game_id.substr(0, 3);
 
-  return texture_directory;
+    if (File::Exists(region_free_directory))
+    {
+      result.insert(region_free_directory);
+    }
+  }
+
+  const auto match_gameid = [game_id](const std::string& filename) {
+    std::string basename;
+    SplitPath(filename, nullptr, &basename, nullptr);
+    return basename == game_id || basename == game_id.substr(0, 3);
+  };
+
+  // Look for any other directories that might be specific to the given gameid
+  const auto root_directory = File::GetUserPath(D_HIRESTEXTURES_IDX);
+  const auto files = Common::DoFileSearch({root_directory}, {".txt"}, true);
+  for (const auto& file : files)
+  {
+    if (match_gameid(file))
+    {
+      // The following code is used to calculate the top directory
+      // of a found gameid.txt file
+      // ex:  <dolphin dir>/Load/Textures/My folder/gameids/<gameid>.txt
+      // would insert "<dolphin dir>/Load/Textures/My folder"
+      const auto directory_path = file.substr(root_directory.size());
+      const std::size_t first_path_separator_position = directory_path.find_first_of(DIR_SEP_CHR);
+      result.insert(root_directory + directory_path.substr(0, first_path_separator_position));
+    }
+  }
+
+  return result;
 }
 
 static const std::string ddscode = ".dds";
@@ -208,7 +244,6 @@ void HiresTexture::ProccessEnviroment(const std::string& fileitem, std::string& 
 void HiresTexture::ProccessTexture(const std::string& fileitem, std::string& filename,
                                    const std::string& extension, const bool BuildMaterialMaps)
 {
-  
   size_t map_index = 0;
   size_t max_type = BuildMaterialMaps ? MapType::specular : MapType::normal;
   bool arbitrary_mips = false;
@@ -304,7 +339,7 @@ void HiresTexture::Update()
   s_textureMap.clear();
   s_enviromentMap.clear();
   const std::string& game_id = SConfig::GetInstance().GetGameID();
-  const std::string texture_directory = GetTextureDirectory(game_id);
+  const std::set<std::string> texture_directories = GetTextureDirectory(game_id);
   const std::string resource_directory = File::GetSysDirectory() + RESOURCES_DIR DIR_SEP;
   std::vector<std::string> Extensions;
   Extensions.push_back(".png");
@@ -332,22 +367,25 @@ void HiresTexture::Update()
     }
   }
 
-  std::vector<std::string> filenames =
-      Common::DoFileSearch({texture_directory}, Extensions, /*recursive*/ true);
-
-  for (const std::string& fileitem : filenames)
+  for (const auto& texture_directory : texture_directories)
   {
-    std::string filename;
-    std::string extension;
-    SplitPath(fileitem, nullptr, &filename, &extension);
-    if (filename.rfind(s_format_prefix, 0) == 0)
+    std::vector<std::string> filenames =
+        Common::DoFileSearch({texture_directory}, Extensions, /*recursive*/ true);
+
+    for (const std::string& fileitem : filenames)
     {
-      ProccessTexture(fileitem, filename, extension, BuildMaterialMaps);
-    }
-    else if (filename.rfind(s_enviroment_prefix, 0) == 0)
-    {
-      filename = filename.substr(s_enviroment_prefix.length());
-      ProccessEnviroment(fileitem, filename, extension);
+      std::string filename;
+      std::string extension;
+      SplitPath(fileitem, nullptr, &filename, &extension);
+      if (filename.rfind(s_format_prefix, 0) == 0)
+      {
+        ProccessTexture(fileitem, filename, extension, BuildMaterialMaps);
+      }
+      else if (filename.rfind(s_enviroment_prefix, 0) == 0)
+      {
+        filename = filename.substr(s_enviroment_prefix.length());
+        ProccessEnviroment(fileitem, filename, extension);
+      }
     }
   }
 
@@ -1170,8 +1208,8 @@ HiresTexture* HiresTexture::LoadEnviroment(const std::string& basename,
     for (size_t level = 0; level < levels; level++)
     {
       const hires_mip_level& item = current.maps[i][level];
-      ImageLoaderParams imgInfo =
-          LoadMipLevel(item, i == 0 && level == 0 ? first_level_function : allocation_function, cacheresult);
+      ImageLoaderParams imgInfo = LoadMipLevel(
+          item, i == 0 && level == 0 ? first_level_function : allocation_function, cacheresult);
       imgInfo.releaseresourcesonerror = cacheresult;
       bool ddsfile = item.is_compressed && TexDecoder::IsCompressed(imgInfo.resultTex);
       if ((level > 0 && ddsfile != last_level_is_dds) || imgInfo.dst == nullptr ||
@@ -1203,7 +1241,7 @@ HiresTexture* HiresTexture::LoadEnviroment(const std::string& basename,
         if (!ValidateImage(imgInfo, level, maxwidth, maxheight, ret->m_format, "color"))
           break;
       }
-      
+
       buffer_pointer = imgInfo.dst + imgInfo.data_size;
       remaining_buffer_size -= imgInfo.data_size;
 
