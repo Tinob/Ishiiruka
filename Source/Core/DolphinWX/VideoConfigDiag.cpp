@@ -1923,7 +1923,7 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
   borderless_fullscreen->Show((vconfig.backend_info.APIType & API_D3D9) == 0);
 #endif
   // EFB Access Cache
-  Fast_efb_cache->Show(vconfig.bEFBAccessEnable);
+  Fast_efb_cache->Enable(vconfig.bEFBAccessEnable);
   // XFB
   virtual_xfb->Enable(vconfig.bUseXFB);
   real_xfb->Enable(vconfig.bUseXFB);
