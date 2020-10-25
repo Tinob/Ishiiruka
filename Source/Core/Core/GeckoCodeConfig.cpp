@@ -30,7 +30,9 @@ std::vector<GeckoCode> DownloadCodes(std::string gameid, bool* succeeded)
     break;
   }
 
-  std::string endpoint{"http://geckocodes.org/txt.php?txt=" + gameid};
+  // codes.rc24.xyz is a mirror of the now defunct geckocodes.org.
+  std::string endpoint{"https://codes.rc24.xyz/txt.php?txt=" + gametdb_id};
+
   Common::HttpRequest http;
   const Common::HttpRequest::Response response = http.Get(endpoint);
   *succeeded = response.has_value();
