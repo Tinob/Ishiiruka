@@ -624,7 +624,16 @@ std::string HiresTexture::GenBaseName(const u8* texture, size_t texture_size, co
   std::string tlutname = tlut_size ? StringFromFormat("_%016" PRIx64, tlut_hash) : "";
   std::string formatname = StringFromFormat("_%d", format);
   std::string fullname = basename + tlutname + formatname;
-  return fullname;
+  std::string wildcardname = basename + "_$" + formatname;
+
+  if (!dump && s_textureMap.find(wildcardname) != s_textureMap.end())
+    return wildcardname;
+
+    // else generate the complete texture
+  if (dump || s_textureMap.find(fullname) != s_textureMap.end())
+    return fullname;
+
+  return "";
 }
 
 inline u8* LoadImageFromFile(const char* path, int& width, int& height)
