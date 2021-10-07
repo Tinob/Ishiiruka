@@ -261,7 +261,7 @@ wxIDataObject::GetSystemData(wxDataFormat format, STGMEDIUM *pmedium) const
           ++it )
     {
         FORMATETC* formatEtc = (*it)->pformatetc;
-        if ( formatEtc->cfFormat == format )
+        if (formatEtc->cfFormat == format.GetFormatId())
         {
             wxCopyStgMedium((*it)->pmedium, pmedium);
             return true;
@@ -279,7 +279,7 @@ wxIDataObject::HasSystemData(wxDataFormat format) const
           ++it )
     {
         FORMATETC* formatEtc = (*it)->pformatetc;
-        if ( formatEtc->cfFormat == format )
+        if ( formatEtc->cfFormat == format.GetFormatId() )
             return true;
     }
 
