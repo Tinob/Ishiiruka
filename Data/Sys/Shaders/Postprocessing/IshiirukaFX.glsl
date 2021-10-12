@@ -1,52 +1,98 @@
 /*===============================================================================*\
-|########################        [Ishiiruka FX 0.9.1]      ######################||
+|########################        [Ishiiruka FX 0.9.2]      ######################||
 || Credist to:                                                                   ||
 || Asmodean (DolphinFX)                                                          ||
 || Matso (MATSODOF)                                                              ||
 || Gilcher Pascal aka Marty McFly (MATSODOF original port to MCFX)               ||
-|| Daniel Rákos (Efficient Gaussian blur with linear sampling)                   ||
+|| Daniel Rï¿½kos (Efficient Gaussian blur with linear sampling)                  ||
 || mudlord (FXAA)
+|| threethan (Depth Preprocessor)
 |############################        By Tino          ############################|
 \*===============================================================================*/
 /*
 [configuration]
 [OptionBool]
-GUIName = Ambient Only
-GUIName.SPA = Solo Oclusión Ambiental
-OptionName = A_SSAO_ONLY
+GUIName = Depth Preprocessor
+OptionName = B_DEPTH_PREPROCESS
 DefaultValue = False
-GUIDescription = Displays SSAO/SSGI ambient color only.
-GUIDescription.SPA = Muestra solo el componente de Oclusión Ambiental.
+GUIDescription = Allows depth data to be modified before being passed to other shaders.
 
 [OptionRangeFloat]
-GUIName = Occlusion Attenuation Start
-GUIName.SPA = Inicio de atenuación en la oclusión.
-OptionName = C_AOASTART
+GUIName = Sky Cutoff
+OptionName = D_SKY_CUTOFF
+MinValue = 0.1
+MaxValue = 1.0
+StepAmount = 0.01
+DefaultValue = 1.0
+GUIDescription = Any pixel above this depth will be treated as having a depth of "Sky Depth"
+DependentOption = B_DEPTH_PREPROCESS
+
+[OptionRangeFloat]
+GUIName = Sky Depth
+OptionName = D_SKY_DEPTH
 MinValue = 0.0
-MaxValue = 0.4
+MaxValue = 1.0
 StepAmount = 0.01
-DefaultValue = 0.4
-GUIDescription = Depth where the attenuation to the SSAO effect starts.
-GUIDescription.SPA = Profundidad a partir de la cual se comienza a atenuar la Oclusión Ambiental.
+DefaultValue = 0.0
+GUIDescription = Any pixel above this "Sky Cutoff" will be treated as having this depth
+DependentOption = B_DEPTH_PREPROCESS
 
 [OptionRangeFloat]
-GUIName = Occlusion Attenuation End
-GUIName.SPA = Final de atenuación en la oclusión.
-OptionName = D_AOAEND
+GUIName = Global Depth Multiplier
+OptionName = D_GLOBAL_DEPTH_MULT
 MinValue = 0.5
-MaxValue = 2.0
-StepAmount = 0.01
-DefaultValue = 2.0
-GUIDescription = Deph where the SSAO attenuation ends, after this value no SSAO is applyed.
-GUIDescription.SPA = Profundidad a partir de la cual finaliza la aplicación de la Oclusión Ambiental.
+MaxValue = 1.5
+StepAmount = 0.1
+DefaultValue = 1.0
+GUIDescription = All pixels' depths will be multiplied by this value
+DependentOption = B_DEPTH_PREPROCESS
 
 [OptionBool]
 GUIName = SSAO
 OptionName = A_SSAO_ENABLED
 DefaultValue = false
 ResolveAtCompilation = True
-GUIDescription = Enables Screen Space Ambient Occlusion.
-GUIDescription.SPA = Habilita la Oclusión Ambiental.
+GUIDescription = Enables Screen Space Ambient Occlusion. Creates shadow on visuals.
+GUIDescription.SPA = Habilita la Oclusiï¿½n Ambiental.
+
+[OptionBool]
+GUIName = Ambient Occlusion Only
+GUIName.SPA = Solo Oclusiï¿½n Ambiental
+OptionName = A_SSAO_ONLY
+DefaultValue = False
+GUIDescription = Displays SSAO/SSGI ambient color only.
+GUIDescription.SPA = Muestra solo el componente de Oclusiï¿½n Ambiental.
+
+[OptionRangeFloat]
+GUIName = Occlusion Multiplier
+OptionName = C_AOAMULT
+MinValue = 0.1
+MaxValue = 1.5
+StepAmount = 0.01
+DefaultValue = 1.0
+GUIDescription = Multiplier to SSAO and SSGI effects
+
+[OptionRangeFloat]
+GUIName = Occlusion Attenuation Start
+GUIName.SPA = Inicio de atenuaciï¿½n en la oclusiï¿½n.
+OptionName = C_AOASTART
+MinValue = 0.0
+MaxValue = 0.4
+StepAmount = 0.01
+DefaultValue = 0.4
+GUIDescription = Depth where the attenuation to the SSAO effect starts.
+GUIDescription.SPA = Profundidad a partir de la cual se comienza a atenuar la Oclusiï¿½n Ambiental.
+
+[OptionRangeFloat]
+GUIName = Occlusion Attenuation End
+GUIName.SPA = Final de atenuaciï¿½n en la oclusiï¿½n.
+OptionName = D_AOAEND
+MinValue = 0.5
+MaxValue = 2.0
+StepAmount = 0.01
+DefaultValue = 2.0
+GUIDescription = Depth where the SSAO attenuation ends, after this value no SSAO is applied.
+GUIDescription.SPA = Profundidad a partir de la cual finaliza la aplicaciï¿½n de la Oclusiï¿½n Ambiental.
 
 [OptionBool]
 GUIName = SSGI
@@ -55,7 +101,7 @@ DefaultValue = false
 ResolveAtCompilation = True
 DependentOption = A_SSAO_ENABLED
 GUIDescription = Enables Screen Space Global Ilumination simulation.
-GUIDescription.SPA = Habilita la simulación de Iluminación global.
+GUIDescription.SPA = Habilita la simulaciï¿½n de Iluminaciï¿½n global.
 
 [OptionRangeInteger]
 GUIName = SSAO Quality
@@ -68,7 +114,7 @@ DefaultValue = 24
 DependentOption = A_SSAO_ENABLED
 ResolveAtCompilation = True
 GUIDescription = Number of samples used to calculate SSAO component, large values gives more quality but may cause performance drops.
-GUIDescription.SPA = Cantidad de muestras utilizadas para el calculo del componente de oclusión, valores muly altos producen una mejor calidad pero pueden acarrear una perdida de performance.
+GUIDescription.SPA = Cantidad de muestras utilizadas para el calculo del componente de oclusiï¿½n, valores muly altos producen una mejor calidad pero pueden acarrear una perdida de performance.
 
 [OptionRangeFloat]
 GUIName = Sample Range
@@ -92,7 +138,7 @@ StepAmount = 0.0001
 DefaultValue = 0.0026
 DependentOption = A_SSAO_ENABLED
 GUIDescription = Amount of filtering applyed to the AO component.
-GUIDescription.SPA = Intensidad de filtrado aplicada al Componente de Oclusión.
+GUIDescription.SPA = Intensidad de filtrado aplicada al Componente de Oclusiï¿½n.
 
 [OptionRangeFloat]
 GUIName = Max Depth
@@ -200,6 +246,7 @@ DependentOption = A_SSGI_ENABLED
 GUIName = MATSO DOF
 OptionName = MATSODOF
 DefaultValue = false
+GUIDescription = Obscures visuals to give appearance of depth.
 
 [OptionBool]
 GUIName = Use depth range focus
@@ -216,8 +263,22 @@ DefaultValue = 0.5, 0.5
 StepAmount = 0.01, 0.01
 DependentOption = MATSODOF
 
+[OptionBool]
+GUIName = Enable Near Blur
+OptionName = DOF_B_NEARBLUR
+DefaultValue = true
+GUIDescription = Enables blur of objects closer than the focus point
+DependentOption = MATSODOF
+
+[OptionBool]
+GUIName = Enable Far Blur
+OptionName = DOF_B_FARBLUR
+DefaultValue = true
+GUIDescription = Enables blur of objects further than the focus point
+DependentOption = MATSODOF
+
 [OptionRangeFloat]
-GUIName = Near Blue Curve
+GUIName = Near Blur Curve
 OptionName = DOF_NEARBLURCURVE
 MinValue = 0.4
 MaxValue = 2.0
@@ -226,7 +287,7 @@ StepAmount = 0.01
 DependentOption = MATSODOF
 
 [OptionRangeFloat]
-GUIName = FarBlue Curve
+GUIName = Far Blur Curve
 OptionName = DOF_FARBLURCURVE
 MinValue = 0.4
 MaxValue = 2.0
@@ -508,6 +569,7 @@ DependentOption = F_FOG
 GUIName = Bloom
 OptionName = D_BLOOM
 DefaultValue = true
+GUIDescription = Increases "bloom" effect. Tends to increase brightness which can be corrected under saturation.
 
 [OptionBool]
 GUIName = Bloom Only
@@ -543,7 +605,7 @@ DefaultValue = 0.27
 DependentOption = D_BLOOM
 
 [OptionBool]
-GUIName = Ligth Scattering
+GUIName = Light Scattering
 OptionName = D_SCATTERRING
 DefaultValue = False
 DependentOption = D_BLOOM
@@ -653,6 +715,7 @@ GUIDescription = R, G and B components of anamorphic flare. Flare is always same
 GUIName = Barrel Distortion
 OptionName = E_BARREL
 DefaultValue = false
+GUIDescription = Bends output video. Used to emulate the effect of CRT monitors on modern hardware.
 
 [OptionRangeFloat]
 GUIName = Lens Center Offset
@@ -708,6 +771,7 @@ DependentOption = A_FXAA_PASS
 EntryPoint = AmbientOcclusion
 DependantOption = A_SSAO_ENABLED
 DependantOption = A_SSGI_ENABLED
+OutputScale = 0.5
 Input0=ColorBuffer
 Input0Filter=Linear
 Input0Mode=Clamp
@@ -718,6 +782,7 @@ Input1Mode=Clamp
 EntryPoint = AOBlur
 DependantOption = A_SSAO_ENABLED
 DependantOption = A_SSGI_ENABLED
+OutputScale = 0.5
 Input0=PreviousPass
 Input0Filter=Linear
 Input0Mode=Clamp
@@ -836,6 +901,32 @@ Input0Filter=Linear
 Input0Mode=Clamp
 [/configuration]
 */
+
+
+/* ------------------- Depth Preprocessor -------------------- */
+float preprocess_depth(float depth)
+{
+	if GetOption(B_DEPTH_PREPROCESS) {
+		if (depth > GetOption(D_SKY_CUTOFF)) {
+			return GetOption(D_SKY_DEPTH);
+		} else {
+			return depth * GetOption(D_GLOBAL_DEPTH_MULT);
+		}
+	} else {
+		return depth;
+	}
+}
+float PSampleDepth(){
+	return preprocess_depth(SampleDepth());
+}
+float PSampleDepthOffset(int2 a){
+	return preprocess_depth(SampleDepthOffset(a));
+}
+float PSampleDepthLocation(int2 a){
+	return preprocess_depth(SampleDepthLocation(a));
+}
+
+
 float3 GetNormalFromDepth(float fDepth)
 {
 	float depth1 = SampleDepthOffset(int2(0, 1));
@@ -1215,7 +1306,7 @@ float4 GetMatsoDOFCA(float2 tex, float CoC)
 float4 GetMatsoDOFBlur(int axis, float2 coord)
 {
 	float4 tcol = SamplePrevLocation(coord);
-	float scenedepth = SampleDepth();
+	float scenedepth = PSampleDepth();
 	float scenefocus = 0.0f;
 	if (OptionEnabled(DOF_A_FOCUSPOINT_RANGE))
 	{
@@ -1223,7 +1314,7 @@ float4 GetMatsoDOFBlur(int axis, float2 coord)
 	}
 	else
 	{
-		scenefocus = SampleDepthLocation(GetOption(DOF_B_FOCUSPOINT));
+		scenefocus = PSampleDepthLocation(GetOption(DOF_B_FOCUSPOINT));
 	}
 	float depthdiff = abs(scenedepth - scenefocus);
 	if (OptionEnabled(DOF_A_FOCUSPOINT_RANGE))
@@ -1233,8 +1324,12 @@ float4 GetMatsoDOFBlur(int axis, float2 coord)
 			depthdiff *= 0.5f * depthdiff * depthdiff;
 		}
 	}
-	depthdiff = (scenedepth < scenefocus) ? pow(depthdiff, GetOption(DOF_NEARBLURCURVE))*(1.0f + pow(abs(0.5f - coord.x)*depthdiff + 0.1f, 2.0)*GetOption(DOF_VIGNETTE)) : depthdiff;
-	depthdiff = (scenedepth > scenefocus) ? pow(depthdiff, GetOption(DOF_FARBLURCURVE)) : depthdiff;
+
+	float nearblur = (GetOption(DOF_B_NEARBLUR)) ? pow(depthdiff, GetOption(DOF_NEARBLURCURVE))*(1.0f + pow(abs(0.5f - coord.x)*depthdiff + 0.1f, 2.0)*GetOption(DOF_VIGNETTE)):0.0;
+	depthdiff = (scenedepth < scenefocus) ? nearblur : depthdiff;
+
+	float farblur  = (GetOption(DOF_B_FARBLUR))  ? pow(depthdiff, GetOption(DOF_FARBLURCURVE)):0.0;
+	depthdiff = (scenedepth > scenefocus) ? farblur : depthdiff;
 
 	float2 discRadius = depthdiff * GetOption(DOF_BLURRADIUS)*GetInvResolution()*0.5 / float(iMatsoDOFBokehQuality);
 
@@ -1834,7 +1929,7 @@ float4 FxaaPass(float4 color)
 void Merger()
 {
 	float4 value = float4(1.0, 1.0, 1.0, 1.0);
-	float depth = SampleDepth();
+	float depth = PSampleDepth();
 	if (!OptionEnabled(A_SSAO_ONLY))
 	{
 		value = Sample();
@@ -1865,6 +1960,7 @@ void Merger()
 	}
 #endif
 	float AOA = (GetOption(D_AOAEND) - depth) / (GetOption(D_AOAEND) - GetOption(C_AOASTART));
+	AOA *= GetOption(C_AOAMULT);
 	value.xyz = lerp(value.xyz, value.xyz * AOCOmponent, AOA);
 #endif
 	if (!OptionEnabled(A_SSAO_ONLY) && OptionEnabled(F_FOG))
@@ -2011,7 +2107,7 @@ void BloomMerger()
 
 	if (OptionEnabled(D_SCATTERRING))
 	{
-		float depth = SampleDepth();
+		float depth = PSampleDepth();
 		float linearcomponent = (GetOption(G_SEND) - depth) / (GetOption(G_SEND) - GetOption(F_SSTART));
 		depth = depth * GetOption(E_SDENSITY);
 		lumColor.rgb = lerp(basecolor, lumColor.rgb, saturate(GetOption(I_SINTENSITY) * lumColor.a));
