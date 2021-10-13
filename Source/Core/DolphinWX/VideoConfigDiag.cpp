@@ -345,6 +345,35 @@ static wxString ppshader_list_desc =
 static wxString ppshader_options_desc =
     _("Some effects offer user-tweakable options. This will open a dialog where you can change the "
       "values of these options.");
+static wxString ppefb_resolution_percent_min_desc =
+    _("Only EFB copies that copy, at minimum, this percentage of the target resolution will be "
+      "considered for post processing. Setting this higher max fix issues where EFB copy may only "
+      "effect part of the screen, or is run multiple times. \n\n(Default: 65%)");
+static wxString ppefb_aspect_desc =
+    _("If enabled, only EFB copies with the exact aspect ratio of the target resolution will be "
+      "considered for post processing. Turning this on may fix issues where EFB copy may only "
+      "effect part of the screen. \n\n(Default: Off)");
+static wxString ppefb_failsafe_desc =
+    _("On: If no valid EFB copies are found, apply postprocessing on swap instead.\nOff: If no "
+      "valid EFB copies are found, postprocessing will be skipped.\n\n(Default: Enabled)");
+static wxString ppefb_perspective_desc =
+    _("If enabled, only EFB copies of a perspective camera will be used. This is useful for "
+      "excluding 2D elements. \n\n(Default: On)");
+static wxString ppefbindex_desc =
+    _("Applies post processing to only a specific efb copy each frame. Fixes issues where "
+      "postprocessing is applied two or more times. Check if results seem more postprocessed than "
+      "with 'On Swap' or 'After blit' to see if this is needed. If no valid copies are found or "
+      "the index is set too high, postprocessing will be applied at the end of the frame. \n\n"
+      "(Default: All Valid Copies)");
+static wxString efb_scale_exclude_min_desc =
+    _("EFBs will only be scaled if above this value, or below the other value. EFBs in between "
+      "will not be scaled. Requires EFB scaling to be enabled. This can be used to fix bloom in "
+      "most games, though some tinkering may be required to get good results.\n\nIf unsure, leave "
+      "at 0%");
+static wxString efb_scale_exclude_max_desc =
+    _("EFBs will only be scaled if below this value, or above the other value. EFBs in between "
+      "will not be scaled. Requires EFB scaling to be enabled. This can be used to fix EFBs for "
+      "shadows while using the other value to fix bloom.\n\nIf unsure, leave at 0%");
 static wxString scalingshader_desc = _(
     "Use a custom shader for resizing from internal resolution to display resolution. This shader "
     "can also perform additional post-processing effects.\n\nIf unsure, select (default).");
@@ -552,8 +581,8 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
         {
           szr_display->Add(
               CreateCheckBox(page_general, _("V-Sync"), (vsync_desc), Config::GFX_VSYNC));
-          szr_display->Add(
-              CreateCheckBox(page_general, _("Black Frame insetion"), (bfi_desc), Config::GFX_USE_BLACK_FRAME_INSERTION));
+          szr_display->Add(CreateCheckBox(page_general, _("Black Frame insetion"), (bfi_desc),
+                                          Config::GFX_USE_BLACK_FRAME_INSERTION));
           szr_display->Add(CreateCheckBoxRefBool(page_general, _("Use Fullscreen"),
                                                  (use_fullscreen_desc),
                                                  SConfig::GetInstance().bFullscreen));
@@ -1021,6 +1050,55 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
       group_Tessellation->Add(szr_tessellation, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
       szr_enh_main->Add(group_Tessellation, 0, wxEXPAND | wxALL, 5);
     }
+    // - EFB Stuff
+    {
+      wxFlexGridSizer* szr_efb_scale_options = new wxFlexGridSizer(2, 5, 5);
+      szr_efb_scale_options->AddGrowableCol(1, 1);
+
+      // EFB Scale Exclude Percent Min
+      szr_efb_scale_options->Add(
+          label_EfbScaleExcludeMin = new wxStaticText(
+              page_enh, wxID_ANY,
+              "Scale EFB Copies Above " +
+                  std::to_string(vconfig.iEFBScaledExcludeMin) +
+                  "%:"),
+          0, wxALIGN_CENTER_VERTICAL, 0);
+
+      wxSlider* const efb_exclude_min_percent_slider = new wxSlider(
+          page_enh, wxID_ANY, vconfig.iEFBScaledExcludeMin, 0, 100,
+          wxDefaultPosition, wxSize(250, wxDefaultSize.y), wxSL_HORIZONTAL | wxSL_BOTTOM);
+
+      efb_exclude_min_percent_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_EfbExcludeMinSlider,
+                                           this);
+      RegisterControl(efb_exclude_min_percent_slider, (efb_scale_exclude_min_desc));
+      szr_efb_scale_options->Add(efb_exclude_min_percent_slider);
+
+      // EFB Scale Exclude Percent Max
+      szr_efb_scale_options->Add(
+          label_EfbScaleExcludeMax = new wxStaticText(
+              page_enh, wxID_ANY,
+              "Also Scale EFB Copies Below " +
+                  std::to_string(vconfig.iEFBScaledExcludeMax) + "%:"),
+          0, wxALIGN_CENTER_VERTICAL, 0);
+
+      wxSlider* const efb_exclude_max_percent_slider =
+          new wxSlider(page_enh, wxID_ANY, vconfig.iEFBScaledExcludeMax, 0, 100, wxDefaultPosition,
+                       wxSize(250, wxDefaultSize.y), wxSL_HORIZONTAL | wxSL_BOTTOM);
+
+      efb_exclude_max_percent_slider->Bind(wxEVT_SLIDER,
+                                           &VideoConfigDiag::Event_EfbExcludeMaxSlider, this);
+      RegisterControl(efb_exclude_max_percent_slider, (efb_scale_exclude_max_desc));
+      szr_efb_scale_options->Add(efb_exclude_max_percent_slider);
+
+      //End
+
+      wxStaticBoxSizer* group_efb_scale_options =
+          new wxStaticBoxSizer(wxVERTICAL, page_enh, _("Conditional EFB Scaling (Bloom Fix)"));
+      group_efb_scale_options->Add(szr_efb_scale_options, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM,
+                                   5);
+      szr_enh_main->Add(group_efb_scale_options, 0, wxEXPAND | wxALL, 5);
+    }
+
     szr_enh_main->AddStretchSpacer();
     CreateDescriptionArea(page_enh, szr_enh_main);
     page_enh->SetSizerAndFit(szr_enh_main);
@@ -1093,15 +1171,19 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
       wxFlexGridSizer* szr_options = new wxFlexGridSizer(2, 5, 5);
       szr_options->AddGrowableCol(1, 1);
 
+
       // Trigger
       const wxString pptrigger_choices[] = {_("On Swap"), _("On Projection"), _("On EFB Copy"),
                                             _("After Blit")};
       choice_pptrigger = CreateChoice(page_postprocessing, Config::GFX_ENHANCE_POST_TRIGUER,
                                       wxGetTranslation(pptrigger_desc), 4, pptrigger_choices);
+
       szr_options->Add(
           new wxStaticText(page_postprocessing, wxID_ANY, _("Post-Processing Trigger:")), 0,
           wxALIGN_CENTER_VERTICAL, 0);
       szr_options->Add(choice_pptrigger, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+
+
 
       choice_scalingshader = new wxChoice(page_postprocessing, wxID_ANY);
       choice_scalingshader->Bind(wxEVT_CHOICE, &VideoConfigDiag::Event_ScalingShader, this);
@@ -1125,10 +1207,64 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
       group_options->Add(szr_options, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
       szr_postprocessing->Add(group_options, 0, wxEXPAND | wxALL, 5);
     }
+    // EFB Options & Filters
+    {
+      wxFlexGridSizer* szr_efb_options = new wxFlexGridSizer(2, 5, 5);
+      szr_efb_options->AddGrowableCol(1, 1);
+
+      // Custom EFB filters
+      szr_efb_options->Add(CreateCheckBox(page_postprocessing,
+                                            _("Must be Perspective Camera"),
+                                      (ppefb_perspective_desc), Config::GFX_POST_EFB_PERSPECTIVE, false),
+                       0, wxBOTTOM | wxLEFT, 5);
+      szr_efb_options->Add(CreateCheckBox(page_postprocessing,
+                                          _("Must Match Screen Aspect Ratio"),
+                                      (ppefb_aspect_desc), Config::GFX_POST_EFB_ASPECT, false),
+                       0, wxBOTTOM | wxLEFT, 5);
+      // EFB Percent
+      szr_efb_options->Add(
+          label_EfbMinScale = new wxStaticText(
+                           page_postprocessing, wxID_ANY,
+                           "Minimum Resolution " +
+                               std::to_string(vconfig.iPostProcessingEfbMinResolutionPercent) +
+                               "%:"),
+                       0, wxALIGN_CENTER_VERTICAL, 0);
+
+      wxSlider* const efb_min_percent_slider = new wxSlider(
+          page_postprocessing, wxID_ANY, vconfig.iPostProcessingEfbMinResolutionPercent, 0, 100,
+          wxDefaultPosition, wxSize(300, wxDefaultSize.y), wxSL_HORIZONTAL | wxSL_BOTTOM);
+
+      efb_min_percent_slider->Bind(wxEVT_SLIDER, &VideoConfigDiag::Event_EfbMinSlider, this);
+      RegisterControl(efb_min_percent_slider, (ppefb_resolution_percent_min_desc));
+      szr_efb_options->Add(efb_min_percent_slider);
+
+      // EFB Isolate
+      const wxString ppefbindex_choices[] = {_("Apply to All Valid EFB Copies"), _("Apply to Only EFB Copy 1"), _("Apply to Only EFB Copy 2"),
+                                            _("Apply to Only EFB Copy 3")};
+      wxChoice* choice_ppefbindex = CreateChoice(page_postprocessing, Config::GFX_ENHANCE_POST_EFB_INDEX,
+                                      (ppefbindex_desc), 4, ppefbindex_choices);
+      szr_efb_options->Add(
+          new wxStaticText(page_postprocessing, wxID_ANY, _("Copy Index Filter:")), 0,
+          wxALIGN_CENTER_VERTICAL, 0);
+      szr_efb_options->Add(choice_ppefbindex, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+
+      //Failsafe
+      szr_efb_options->Add(new wxStaticText(page_postprocessing, wxID_ANY, _("If no Valid EFB Copies:")),
+                           0, wxALIGN_CENTER_VERTICAL, 0);
+      szr_efb_options->Add(CreateCheckBox(page_postprocessing,
+                                          _("Use 'On Swap' as Failsafe"),
+                                      (ppefb_failsafe_desc), Config::GFX_POST_EFB_FAILSAFE, false),
+                           0, wxBOTTOM | wxLEFT, 5);
+
+      group_efb_options = new wxStaticBoxSizer(wxVERTICAL, page_postprocessing, _("EFB Copy Filters"));
+      group_efb_options->Add(szr_efb_options, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+      szr_postprocessing->Add(group_efb_options, 0, wxEXPAND | wxALL, 5);
+    }
 
     szr_postprocessing->AddStretchSpacer();
     CreateDescriptionArea(page_postprocessing, szr_postprocessing);
     page_postprocessing->SetSizerAndFit(szr_postprocessing);
+
   }
   else
   {
@@ -1763,6 +1899,38 @@ void VideoConfigDiag::Event_StereoShader(wxCommandEvent& ev)
   ReloadPostProcessingShaders();
 }
 
+void VideoConfigDiag::Event_EfbMinSlider(wxCommandEvent& ev)
+{
+  Config::SetBaseOrCurrent(Config::GFX_ENHANCE_POST_EFB_RESOLUTION_PERCENT_MIN, ev.GetInt());
+
+  label_EfbMinScale->SetLabel("Minimum EFB Resolution " +
+                              std::to_string(vconfig.iPostProcessingEfbMinResolutionPercent) +
+                              "%:");
+  ev.Skip();
+}
+
+void VideoConfigDiag::Event_EfbExcludeMinSlider(wxCommandEvent& ev)
+{
+  Config::SetBaseOrCurrent(Config::GFX_HACK_COPY_EFB_SCALED_EXCLUDE_MIN, ev.GetInt());
+
+  label_EfbScaleExcludeMin->SetLabel(
+      "Scale EFB Copies Above " +
+                                     std::to_string(vconfig.iEFBScaledExcludeMin) +
+                              "%:");
+  ev.Skip();
+}
+
+void VideoConfigDiag::Event_EfbExcludeMaxSlider(wxCommandEvent& ev)
+{
+  Config::SetBaseOrCurrent(Config::GFX_HACK_COPY_EFB_SCALED_EXCLUDE_MAX, ev.GetInt());
+
+  label_EfbScaleExcludeMax->SetLabel(
+      "Also Scale EFB Copies Below " + std::to_string(vconfig.iEFBScaledExcludeMax) +
+                                     "%:");
+  ev.Skip();
+}
+
+
 void VideoConfigDiag::Event_ConfigureScalingShader(wxCommandEvent& ev)
 {
   PostProcessingConfigDiag dialog(
@@ -1917,6 +2085,8 @@ void VideoConfigDiag::OnUpdateUI(wxUpdateUIEvent& ev)
   group_phong->Show(phongEnabled);
   hp_frame_buffer->Show(vconfig.backend_info.bSupportsHighPrecisionFrameBuffer);
 
+  bool ppEfbcopy = vconfig.iPostProcessingTrigger == 2;
+  group_efb_options->Show(ppEfbcopy);
 #if defined WIN32
   // Borderless Fullscreen
   borderless_fullscreen->Enable((vconfig.backend_info.APIType & API_D3D9) == 0);

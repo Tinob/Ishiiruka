@@ -1451,7 +1451,12 @@ void TextureCacheBase::CopyRenderTargetToTexture(u32 dstAddr, u32 dstFormat, u32
   u32 scaled_tex_w = tex_w;
   u32 scaled_tex_h = tex_h;
 
-  if (g_ActiveConfig.bCopyEFBScaled)
+  if (g_ActiveConfig.bCopyEFBScaled
+      && (float) tex_w >= (float)g_ActiveConfig.iEFBScaledExcludeMin*(float)g_renderer->GetTargetRectangle().GetWidth()/200.0
+      && (float) tex_h >= (float)g_ActiveConfig.iEFBScaledExcludeMin*(float)g_renderer->GetTargetRectangle().GetHeight()/200.0
+      ||((float) tex_w <= (float)g_ActiveConfig.iEFBScaledExcludeMax*(float)g_renderer->GetTargetRectangle().GetWidth()/200.0
+      || (float) tex_h <= (float)g_ActiveConfig.iEFBScaledExcludeMax*(float)g_renderer->GetTargetRectangle().GetHeight()/200.0
+    ))
   {
     scaled_tex_w = g_renderer->EFBToScaledX(tex_w);
     scaled_tex_h = g_renderer->EFBToScaledY(tex_h);

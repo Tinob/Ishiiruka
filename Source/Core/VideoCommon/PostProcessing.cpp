@@ -1405,12 +1405,27 @@ void PostProcessor::OnEFBCopy(const TargetRectangle* src_rect)
     return;
   }
 
-  // Fire off postprocessing on the current efb if a perspective scene has been drawn.
-  if (m_projection_state == PROJECTION_STATE_PERSPECTIVE &&
-      (src_rect == nullptr || (src_rect->GetWidth() > ((g_renderer->GetTargetWidth() * 2) / 3))))
+  // Fire off postprocessing on the current efb if conditions are met
+  if ((!g_ActiveConfig.bPostProcessingEfbMustBePerspective || m_projection_state == PROJECTION_STATE_PERSPECTIVE) &&
+      (src_rect == nullptr ||
+      (float(src_rect->GetWidth())  > (float(g_renderer->GetTargetWidth()) *float(float(g_ActiveConfig.iPostProcessingEfbMinResolutionPercent)/float(100)))) &&
+      (float(src_rect->GetHeight()) > (float(g_renderer->GetTargetHeight())*float(float(g_ActiveConfig.iPostProcessingEfbMinResolutionPercent)/float(100)))) ) &&
+      (!g_ActiveConfig.bPostProcessingEfbMustBeAspect      || (float(src_rect->GetWidth())/float(src_rect->GetHeight()) == (float(g_renderer->GetTargetWidth())/float(g_renderer->GetTargetHeight())))) )
   {
-    DoEFB(src_rect);
-    m_projection_state = PROJECTION_STATE_FINAL;
+    if (g_ActiveConfig.iPostProcessingEfbIndex == 0)
+    {
+      DoEFB(src_rect);
+      m_projection_state = PROJECTION_STATE_FINAL;
+    }
+    else
+    {
+      if (m_efb_counter == g_ActiveConfig.iPostProcessingEfbIndex)
+      {
+        DoEFB(src_rect);
+        m_projection_state = PROJECTION_STATE_FINAL;
+      }
+      m_efb_counter += 1;
+    }
   }
 }
 
@@ -1425,10 +1440,12 @@ void PostProcessor::OnEndFrame()
 
   // If we didn't switch to orthographic after perspective, post-process now (e.g. if no HUD was
   // drawn)
-  if (m_projection_state == PROJECTION_STATE_PERSPECTIVE)
+  if (m_projection_state == PROJECTION_STATE_PERSPECTIVE
+    && g_ActiveConfig.bPostProcessingEfbFailsafe)
     DoEFB(nullptr);
 
   m_projection_state = PROJECTION_STATE_INITIAL;
+  m_efb_counter = 0;
 }
 
 void PostProcessor::UpdateConfiguration()

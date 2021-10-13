@@ -119,6 +119,10 @@ protected:
   void Event_ScalingShader(wxCommandEvent& ev);
   void Event_ConfigureScalingShader(wxCommandEvent &ev);
   void Event_StereoShader(wxCommandEvent& ev);
+  void Event_EfbMinSlider(wxCommandEvent& ev);
+
+  void Event_EfbExcludeMinSlider(wxCommandEvent& ev);
+  void Event_EfbExcludeMaxSlider(wxCommandEvent& ev);
 
   void Event_StereoDepth(wxCommandEvent &ev);
   void Event_TessellationDistance(wxCommandEvent &ev);
@@ -194,6 +198,9 @@ protected:
   SettingCheckBox* hp_frame_buffer;
   SettingCheckBox* sim_bump;
   wxStaticText* label_TextureScale;
+  wxStaticText* label_EfbMinScale;
+  wxStaticText* label_EfbScaleExcludeMin;
+  wxStaticText* label_EfbScaleExcludeMax;
   SettingCheckBox* borderless_fullscreen;
   RefBoolSetting<wxCheckBox>* render_to_main_checkbox;
 
@@ -230,6 +237,7 @@ protected:
   wxChoice* choice_stereoshader;
   wxStaticBoxSizer* group_phong;
   wxStaticBoxSizer* group_Tessellation;
+  wxStaticBoxSizer* group_efb_options;
 
   wxSlider* bump_strenght_slider;
   wxSlider* bump_threshold_slider;

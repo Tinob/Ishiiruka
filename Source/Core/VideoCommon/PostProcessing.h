@@ -610,6 +610,7 @@ protected:
 
   // Projection state for detecting when to apply post
   PROJECTION_STATE m_projection_state = PROJECTION_STATE_INITIAL;
+  int m_efb_counter = 0;
 
   // Global post-processing enable state
   bool m_active = false;
