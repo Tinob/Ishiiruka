@@ -128,7 +128,15 @@ false };
 const ConfigInfo<int> GFX_ENHANCE_MAX_ANISOTROPY{{System::GFX, "Enhancements", "MaxAnisotropy"}, 0};
 const ConfigInfo<bool> GFX_ENHANCE_POST_ENABLED{
     {System::GFX, "Enhancements", "PostProcessingEnable"}, false};
+const ConfigInfo<bool> GFX_POST_EFB_PERSPECTIVE{
+    {System::GFX, "Enhancements", "PostProcessingEfbMustBePerspective"}, true};
+const ConfigInfo<bool> GFX_POST_EFB_ASPECT{
+    {System::GFX, "Enhancements", "PostProcessingEfbMustBeAspect"}, false};
+const ConfigInfo<bool> GFX_POST_EFB_FAILSAFE{
+    {System::GFX, "Enhancements", "PostProcessingEfbFailsafe"}, true};
 const ConfigInfo<int> GFX_ENHANCE_POST_TRIGUER{ { System::GFX, "Enhancements", "PostProcessingTrigger" }, 0 };
+const ConfigInfo<int> GFX_ENHANCE_POST_EFB_RESOLUTION_PERCENT_MIN{ {System::GFX, "Enhancements", "PostProcessingEfbMinResolutionPercent"}, 65};
+const ConfigInfo<int> GFX_ENHANCE_POST_EFB_INDEX{ {System::GFX, "Enhancements", "PostProcessingEfbIndex"}, 0 };
 const ConfigInfo<std::string> GFX_ENHANCE_POST_SHADERS{
   { System::GFX, "Enhancements", "PostProcessingShaders" }, "" };
 const ConfigInfo<std::string> GFX_ENHANCE_SCALING_SHADER{
@@ -174,6 +182,9 @@ const ConfigInfo<bool> GFX_HACK_FORCE_PROGRESSIVE{{System::GFX, "Hacks", "ForceP
 const ConfigInfo<bool> GFX_HACK_SKIP_EFB_COPY_TO_RAM{{System::GFX, "Hacks", "EFBToTextureEnable"},
                                                      true};
 const ConfigInfo<bool> GFX_HACK_COPY_EFB_SCALED{{System::GFX, "Hacks", "EFBScaledCopy"}, true};
+const ConfigInfo<int> GFX_HACK_COPY_EFB_SCALED_EXCLUDE_MIN{{System::GFX, "Hacks", "EFBScaledExcludeMin"},0};
+const ConfigInfo<int> GFX_HACK_COPY_EFB_SCALED_EXCLUDE_MAX{{System::GFX, "Hacks", "EFBScaledExcludeMax"},0};
+
 const ConfigInfo<bool> GFX_HACK_EFB_EMULATE_FORMAT_CHANGES{
     {System::GFX, "Hacks", "EFBEmulateFormatChanges"}, false};
 const ConfigInfo<bool> GFX_HACK_VERTEX_ROUDING{{System::GFX, "Hacks", "VertexRounding"}, false};

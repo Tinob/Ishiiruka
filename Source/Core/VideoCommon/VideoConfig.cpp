@@ -161,7 +161,12 @@ void VideoConfig::Refresh()
 
   iMaxAnisotropy = Config::Get(Config::GFX_ENHANCE_MAX_ANISOTROPY);
   bPostProcessingEnable = Config::Get(Config::GFX_ENHANCE_POST_ENABLED);
+  bPostProcessingEfbMustBePerspective = Config::Get(Config::GFX_POST_EFB_PERSPECTIVE);
+  bPostProcessingEfbMustBeAspect = Config::Get(Config::GFX_POST_EFB_ASPECT);
+  bPostProcessingEfbFailsafe = Config::Get(Config::GFX_POST_EFB_FAILSAFE);
   iPostProcessingTrigger = Config::Get(Config::GFX_ENHANCE_POST_TRIGUER);
+  iPostProcessingEfbMinResolutionPercent = Config::Get(Config::GFX_ENHANCE_POST_EFB_RESOLUTION_PERCENT_MIN);
+  iPostProcessingEfbIndex = Config::Get(Config::GFX_ENHANCE_POST_EFB_INDEX);
   sPostProcessingShaders = Config::Get(Config::GFX_ENHANCE_POST_SHADERS);
   sScalingShader = Config::Get(Config::GFX_ENHANCE_SCALING_SHADER);
   bForceTrueColor = Config::Get(Config::GFX_ENHANCE_FORCE_TRUE_COLOR);
@@ -194,6 +199,8 @@ void VideoConfig::Refresh()
   bForceProgressive = Config::Get(Config::GFX_HACK_FORCE_PROGRESSIVE);
   bSkipEFBCopyToRam = Config::Get(Config::GFX_HACK_SKIP_EFB_COPY_TO_RAM);
   bCopyEFBScaled = Config::Get(Config::GFX_HACK_COPY_EFB_SCALED);
+  iEFBScaledExcludeMin = Config::Get(Config::GFX_HACK_COPY_EFB_SCALED_EXCLUDE_MIN);
+  iEFBScaledExcludeMax = Config::Get(Config::GFX_HACK_COPY_EFB_SCALED_EXCLUDE_MAX);
   bEFBEmulateFormatChanges = Config::Get(Config::GFX_HACK_EFB_EMULATE_FORMAT_CHANGES);
   bVertexRounding = Config::Get(Config::GFX_HACK_VERTEX_ROUDING);
 
