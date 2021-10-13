@@ -131,6 +131,11 @@ struct VideoConfig final
   int iMaxAnisotropy;
   bool bPostProcessingEnable;
   int iPostProcessingTrigger;
+  bool bPostProcessingEfbMustBePerspective;
+  bool bPostProcessingEfbMustBeAspect;
+  bool bPostProcessingEfbFailsafe;
+  int iPostProcessingEfbMinResolutionPercent;
+  int iPostProcessingEfbIndex;
   std::string sPostProcessingShaders;
   std::string sScalingShader;
   std::string sStereoShader;
@@ -193,6 +198,8 @@ struct VideoConfig final
   bool bEFBEmulateFormatChanges;
   bool bSkipEFBCopyToRam;
   bool bCopyEFBScaled;
+  int iEFBScaledExcludeMin;
+  int iEFBScaledExcludeMax;
   int iSafeTextureCache_ColorSamples;
   ProjectionHackConfig phack;
   float fAspectRatioHackW, fAspectRatioHackH;
