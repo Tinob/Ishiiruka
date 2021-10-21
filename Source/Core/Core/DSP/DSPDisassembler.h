@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <limits>
 
 #include "Common/CommonTypes.h"
 
