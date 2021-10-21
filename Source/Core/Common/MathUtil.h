@@ -8,6 +8,7 @@
 #include <array>
 #include <cstdlib>
 #include <vector>
+#include <limits>
 
 #include "Common/CommonTypes.h"
 
