@@ -138,7 +138,7 @@ static wxString ws_hack_desc =
     _("Force the game to output graphics for widescreen resolutions.\nCauses graphical glitches in "
       "some games.\n\nIf unsure, leave this unchecked.");
 static wxString vsync_desc =
-    _("Wait for vertical blanks in order to reduce tearing.\nDecreases performance if emulation "
+    _("Wait for vertical blanks in order to reduce tearing.\nImpairs performance if emulation "
       "speed is below 100%.\n\nIf unsure, leave this unchecked.");
 static wxString bfi_desc =
     _("Insert black frames to reduce motion blur in 120hz monitors.");
@@ -151,7 +151,7 @@ static wxString aa_desc =
       "issues.\n\nIf unsure, select None.");
 static wxString scaled_efb_copy_desc = _(
     "Greatly increases quality of textures generated using render-to-texture effects.\nRaising the "
-    "internal resolution will improve the effect of this setting.\nSlightly decreases performance "
+    "internal resolution will improve the effect of this setting.\nSlightly impairs performance "
     "and possibly causes issues (although unlikely).\n\nIf unsure, leave this checked.");
 static wxString pixel_lighting_desc =
     _("Calculate lighting of 3D graphics per-pixel rather than per-vertex.\nDecreases emulation "
@@ -184,7 +184,7 @@ static wxString Use_Scaling_filter_desc =
 static wxString borderless_fullscreen_desc =
     _("Implement fullscreen mode with a borderless window spanning the whole screen instead of "
       "using exclusive mode.\nAllows for faster transitions between fullscreen and windowed mode, "
-      "but increases input latency, makes movement less smooth and slightly decreases "
+      "but increases input latency, makes movement less smooth and slightly impairs "
       "performance.\nExclusive mode is required to support Nvidia 3D Vision in the Direct3D "
       "backend.\n\nIf unsure, leave this unchecked.");
 static wxString internal_res_desc =
@@ -353,7 +353,7 @@ static wxString ppefb_resolution_percent_min_desc =
 static wxString ppefb_aspect_desc =
     _("If enabled, only EFB copies with the exact aspect ratio of the target resolution will be "
       "considered for post-processing. Turning this on may fix issues where EFB copy may only "
-      "effect part of the screen. \n\n(Default: Off)");
+      "affect part of the screen. \n\n(Default: Off)");
 static wxString ppefb_failsafe_desc =
     _("On: If no valid EFB copies are found, apply post-processing on swap instead.\nOff: If no "
       "valid EFB copies are found, post-processing will be skipped.\n\n(Default: Enabled)");
@@ -1301,7 +1301,7 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
                                 Config::GFX_HACK_EFB_ACCESS_ENABLE, true),
                  0, wxBOTTOM | wxLEFT, 5);
     Fast_efb_cache = CreateCheckBox(page_hacks, _("Fast EFB Access"), (efb_fast_access_desc),
-                                    Config::GFX_HACK_EFB_FAST_ACCESS_ENABLE, false);
+                                    Config::GFX_HACK_EFB_FAST_ACCESS_ENABLE, true);
     szr_efb->Add(Fast_efb_cache, 0, wxBOTTOM | wxLEFT, 5);
     szr_efb->Add(emulate_efb_format_changes, 0, wxBOTTOM | wxLEFT, 5);
     szr_efb->Add(CreateCheckBox(page_hacks, _("Store EFB copies to Texture Only"),
