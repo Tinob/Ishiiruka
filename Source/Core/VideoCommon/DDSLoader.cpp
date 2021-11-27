@@ -68,7 +68,7 @@
 #define DDPF_PAL8 0x00000020        // DDPF_PALETTEINDEXED8
 #define DDPF_PAL8A 0x00000021       // DDPF_PALETTEINDEXED8 | DDPF_ALPHAPIXELS
 #define DDPF_BUMPDUDV 0x00080000    // DDPF_BUMPDUDV
-
+#define DDSCAPS_TEXTURE 0x1000
 // Subset here matches D3D10_RESOURCE_DIMENSION and D3D11_RESOURCE_DIMENSION
 enum DDS_RESOURCE_DIMENSION
 {
@@ -385,16 +385,19 @@ bool TextureToDDS(const u8* data, int row_stride, const std::string& filename, i
   header.ddpfPixelFormat.dwSize = 32;
   header.dwWidth = width;
   header.dwHeight = height;
+  header.ddsCaps.dwCaps = DDSCAPS_TEXTURE;  
   switch (format)
   {
   case DDSC_DXT1:
-    header.ddpfPixelFormat.dwFourCC = FOURCC_DXT1;
+    header.ddpfPixelFormat.dwFourCC = FOURCC_DXT1;   
     break;
   case DDSC_DXT3:
     header.ddpfPixelFormat.dwFourCC = FOURCC_DXT3;
+    header.ddpfPixelFormat.dwFlags = header.ddpfPixelFormat.dwFlags | DDPF_ALPHA;
     break;
   case DDSC_DXT5:
     header.ddpfPixelFormat.dwFourCC = FOURCC_DXT5;
+    header.ddpfPixelFormat.dwFlags = header.ddpfPixelFormat.dwFlags | DDPF_ALPHA;
     break;
   default:
     break;
