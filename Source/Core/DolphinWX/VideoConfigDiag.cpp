@@ -135,13 +135,13 @@ static wxString ar_desc =
       "analog TV.\nStretch to Window: Stretch the picture to the window size.\n\nIf unsure, select "
       "Auto.");
 static wxString ws_hack_desc =
-    _("Force the game to output graphics for widescreen resolutions.\nCauses graphical glitches is "
+    _("Force the game to output graphics for widescreen resolutions.\nCauses graphical glitches in "
       "some games.\n\nIf unsure, leave this unchecked.");
 static wxString vsync_desc =
     _("Wait for vertical blanks in order to reduce tearing.\nDecreases performance if emulation "
       "speed is below 100%.\n\nIf unsure, leave this unchecked.");
 static wxString bfi_desc =
-    _("Insert black frames to reduce motion blur in 120hz monitors");
+    _("Insert black frames to reduce motion blur in 120hz monitors.");
 static wxString af_desc =
     _("Enable anisotropic filtering.\nEnhances visual quality of textures that are at oblique "
       "viewing angles.\nMight cause issues in a small number of games.\n\nIf unsure, select 1x.");
@@ -150,28 +150,28 @@ static wxString aa_desc =
       "picture look less blocky.\nHeavily decreases emulation speed and sometimes causes "
       "issues.\n\nIf unsure, select None.");
 static wxString scaled_efb_copy_desc = _(
-    "Greatly increases quality of textures generated using render to texture effects.\nRaising the "
+    "Greatly increases quality of textures generated using render-to-texture effects.\nRaising the "
     "internal resolution will improve the effect of this setting.\nSlightly decreases performance "
     "and possibly causes issues (although unlikely).\n\nIf unsure, leave this checked.");
 static wxString pixel_lighting_desc =
-    _("Calculate lighting of 3D graphics per-pixel rather than per vertex.\nDecreases emulation "
+    _("Calculate lighting of 3D graphics per-pixel rather than per-vertex.\nDecreases emulation "
       "speed by some percent (depending on your GPU).\nThis usually is a safe enhancement, but "
       "might cause issues sometimes.\n\nIf unsure, leave this unchecked.");
 static wxString phong_lighting_desc = _("Use Phong specular model when pixel lighting is enabled.");
-static wxString phong_intensity_desc = _("Controls Global intensity of specular reflection.");
-static wxString rim_intensity_desc = _("Controls Intensity of rim effect.");
+static wxString phong_intensity_desc = _("Controls global intensity of specular reflection.");
+static wxString rim_intensity_desc = _("Controls intensity of rim effect.");
 static wxString rim_power_desc = _("Controls exponent of rim effect.");
 static wxString rim_base_desc = _("Controls minimum rim color.");
-static wxString bump_desc = _("Enable generation of bumpmaps to improve lighting effects.");
-static wxString bump_strength_desc = _("Controls strength of simulated bumpmaps. Needs to be "
-                                       "adjusted per game to acheive better quality");
+static wxString bump_desc = _("Enable generation of bump maps to improve lighting effects.");
+static wxString bump_strength_desc = _("Controls strength of simulated bump maps. Needs to be "
+                                       "adjusted per game to achieve better quality.");
 static wxString bump_detail_frequency_desc =
-    _("Controls detail bumpmap frequency. This will change the size of the noise pattern.");
+    _("Controls detail bump map frequency. This will change the size of the noise pattern.");
 static wxString bump_detail_blend_desc =
-    _("Controls the detail bumpmap strength. Detail bump will add noise to existing textures.");
+    _("Controls the detail bump map strength. Detail bump will add noise to existing textures.");
 static wxString bump_threshold_desc =
-    _("Controls simulated bumpmap detail detection threshold. Big values can detect more details "
-      "as bumps but can cause glitches");
+    _("Controls simulated bump map detail detection threshold. Big values can detect more details "
+      "as bumps but can cause glitches.");
 static wxString hacked_buffer_upload_desc =
     _("Uses unsafe operations to speed up vertex streaming in OpenGL. There are no known problems "
       "on supported GPUs, but it will cause severe stability and graphical issues otherwise.\n\nIf "
@@ -180,7 +180,7 @@ static wxString fast_depth_calc_desc =
     _("Use a less accurate algorithm to calculate depth values.\nCauses issues in a few games but "
       "might give a decent speedup.\n\nIf unsure, leave this checked.");
 static wxString Use_Scaling_filter_desc =
-    _("Use filtering when efb scaled size is larger than the target resolution.");
+    _("Use filtering when EFB scaled size is larger than the target resolution.");
 static wxString borderless_fullscreen_desc =
     _("Implement fullscreen mode with a borderless window spanning the whole screen instead of "
       "using exclusive mode.\nAllows for faster transitions between fullscreen and windowed mode, "
@@ -199,14 +199,15 @@ static wxString efb_access_desc =
       "some games, but might disable some gameplay-related features or graphical effects.\n\nIf "
       "unsure, leave this unchecked.");
 static wxString efb_fast_access_desc =
-    _("Use a fast efb caching method to speed up access. This method is inaccurate but will make "
-      "games run faster and efb reads and writes will still work.");
+    _("Use a faster EFB caching method to speed up access. This method is inaccurate but will make "
+      "games run faster while still allowing EFB reads and writes to work.\n\nIf unsure, leave this "
+      "checked.");
 static wxString efb_emulate_format_changes_desc =
     _("Ignore any changes to the EFB format.\nImproves performance in many games without any "
       "negative effect. Causes graphical defects in a small number of other games though.\n\nIf "
       "unsure, leave this checked.");
 static wxString viewport_correction_desc =
-    _("Some games uses viewport values that are not compatible with D3D backends, to solve issues "
+    _("Some games use viewport values that are not compatible with D3D backends, to solve issues "
       "on those games check this.\n\nIf unsure, leave this unchecked.");
 static wxString skip_efb_copy_to_ram_desc =
     _("Stores EFB Copies exclusively on the GPU, bypassing system memory. Causes graphical defects "
@@ -232,7 +233,7 @@ static wxString dithering_desc =
       "can cause small graphical issues.\n\n\nIf unsure, leave this unchecked.");
 static wxString hp_frame_buffer_desc =
     _("Forces the game to render using high precision color textures to increase graphic quality "
-      "while using post procesing shaders, "
+      "while using post-processing shaders, "
       "can cause small graphical issues.\n\n\nIf unsure, leave this unchecked.");
 static wxString hdr_output_desc = _("If hardware supports it, it will use HDR display capabilities.");
 static wxString disable_dstalpha_desc =
@@ -267,7 +268,7 @@ static wxString xfb_virtual_desc =
       "lot of other games (especially homebrew applications).\n\nIf unsure, leave this checked.");
 static wxString xfb_hybrid_desc =
     _("Emulate XFBs accurately.\nSlows down emulation a lot and prohibits high-resolution "
-      "rendering if the game uses the cpu to  change the framebuffer but is necessary to emulate a "
+      "rendering if the game uses the CPU to  change the framebuffer but is necessary to emulate a "
       "number of games properly.\n\nIf unsure, check virtual XFB emulation instead.");
 static wxString dump_textures_desc =
     _("Dump decoded game textures to User/Dump/Textures/<game_id>/\n\nIf unsure, leave this "
@@ -275,22 +276,22 @@ static wxString dump_textures_desc =
 static wxString dump_VertexTranslators_desc =
     _("Dump Vertex translator code to User/Dump/\n\nIf unsure, leave this unchecked.");
 static wxString fullAsyncShaderCompilation_desc =
-    _("Make shader compilation proccess fully asynchronous. This can cause glitches but will give "
+    _("Make shader compilation process fully asynchronous. This can cause glitches but will give "
       "a smooth game experience.");
 static wxString compute_texture_decoding_desc =
-    _("Decode Textures using compute shaders. Can Increase Performance in some scenarios.");
+    _("Decode textures using compute shaders. Can improve performance in some scenarios.");
 static wxString Compute_texture_encoding_desc =
-    _("Encode Textures using compute shaders. Can Increase Performance in some scenarios.");
+    _("Encode textures using compute shaders. Can improve performance in some scenarios.");
 static wxString waitforshadercompilation_desc =
-    _("Wait for shader compilation in the cpu to avoid fifo problems. This option prevents loops "
-      "in F-Zero, Metroid Prime fifo resets and others.");
+    _("Wait for shader compilation in the CPU to avoid FIFO problems. This option prevents loops "
+      "in F-Zero, Metroid Prime FIFO resets and others.");
 static wxString predictiveFifo_desc =
-    _("Generate a secondary fifo to predict resource usage and improve loading time.");
+    _("Generate a secondary FIFO to predict resource usage and improve loading time.");
 static wxString load_hires_textures_desc = _(
     "Load custom textures from User/Load/Textures/<game_id>/\n\nIf unsure, leave this unchecked.");
 static wxString load_hires_material_maps_desc =
-    _("Load custom material maps from User/Load/Textures/<game_id>/\nNeeded to Enable Advanced "
-      "lighting, requires Pixel Lighting and Hires Textures Enabled\nIf unsure, leave this "
+    _("Load custom material maps from User/Load/Textures/<game_id>/.\nNeeded to enable advanced "
+      "lighting and requires per-pixel Lighting and Hires Textures to be enabled.\nIf unsure, leave this "
       "unchecked.");
 static wxString cache_hires_textures_desc =
     _("Cache custom textures to system RAM on startup.\nThis can require exponentially more RAM "
@@ -320,9 +321,9 @@ static wxString free_look_desc =
       "faster and SHIFT+9 to move slower). Press SHIFT+R to reset the camera.\n\nIf unsure, leave "
       "this unchecked.");
 static wxString shader_precompile_desc =
-    _("If a database of shader for the current game exists, precompile all known shaders to void "
-      "issues and stutering during gameplay. This option will increase startup time but will "
-      "improve gaming experience. Warning: with a clean shader cache dx9 can have up to 20 minutes "
+    _("If a database of shaders for the current game exists, precompile all known shaders to void "
+      "issues and stuttering during gameplay. This option will increase startup time but will "
+      "improve gaming experience. Warning: with a clean shader cache DX9 can have up to 20 minutes "
       "shader compilation time in some games.");
 static wxString crop_desc = _("Crop the picture from its native aspect ratio to 4:3 or 16:9.\n\nIf "
                               "unsure, leave this unchecked.");
@@ -335,11 +336,11 @@ static wxString pptrigger_desc =
     _("Determines when to apply post-processing.\nOn Swap will apply post-processing before "
       "presenting to the screen. On Projection applies post-processing before the game draws 2D "
       "elements on the screen. However, this may not work with all games. On EFB Copy applies "
-      "post-processing when an EFB copy of a perspective scene is requested. This may work for for "
-      "other games. After blit will apply post processing after bliting reducing gpu usage when "
-      "using High efb scales.\n\nIf unsure, select On Swap.");
+      "post-processing when an EFB copy of a perspective scene is requested. This may work for "
+      "other games. After Blit will apply post-processing after blitting reducing GPU usage when "
+      "using high EFB scales.\n\nIf unsure, select On Swap.");
 static wxString ppshader_list_desc =
-    _("Applies post-processing effects when the trigger chosen in the occurs, by default this is "
+    _("Applies post-processing effects when the trigger chosen occurs. By default this is "
       "at the end of a frame.\n\nPost-processing is performed at the selected internal "
       "resolution.\n\nIf unsure, leave the list empty.");
 static wxString ppshader_options_desc =
@@ -347,23 +348,23 @@ static wxString ppshader_options_desc =
       "values of these options.");
 static wxString ppefb_resolution_percent_min_desc =
     _("Only EFB copies that copy, at minimum, this percentage of the target resolution will be "
-      "considered for post processing. Setting this higher max fix issues where EFB copy may only "
-      "effect part of the screen, or is run multiple times. \n\n(Default: 65%)");
+      "considered for post-processing. Setting this higher may fix issues where EFB copy may only "
+      "affect part of the screen, or is run multiple times. \n\n(Default: 65%)");
 static wxString ppefb_aspect_desc =
     _("If enabled, only EFB copies with the exact aspect ratio of the target resolution will be "
-      "considered for post processing. Turning this on may fix issues where EFB copy may only "
+      "considered for post-processing. Turning this on may fix issues where EFB copy may only "
       "effect part of the screen. \n\n(Default: Off)");
 static wxString ppefb_failsafe_desc =
-    _("On: If no valid EFB copies are found, apply postprocessing on swap instead.\nOff: If no "
-      "valid EFB copies are found, postprocessing will be skipped.\n\n(Default: Enabled)");
+    _("On: If no valid EFB copies are found, apply post-processing on swap instead.\nOff: If no "
+      "valid EFB copies are found, post-processing will be skipped.\n\n(Default: Enabled)");
 static wxString ppefb_perspective_desc =
     _("If enabled, only EFB copies of a perspective camera will be used. This is useful for "
       "excluding 2D elements. \n\n(Default: On)");
 static wxString ppefbindex_desc =
-    _("Applies post processing to only a specific efb copy each frame. Fixes issues where "
-      "postprocessing is applied two or more times. Check if results seem more postprocessed than "
+    _("Applies post-processing to only a specific EFB copy each frame. Fixes issues where "
+      "post-processing is applied two or more times. Check if results seem more post-processed than "
       "with 'On Swap' or 'After blit' to see if this is needed. If no valid copies are found or "
-      "the index is set too high, postprocessing will be applied at the end of the frame. \n\n"
+      "the index is set too high, post-processing will be applied at the end of the frame. \n\n"
       "(Default: All Valid Copies)");
 static wxString efb_scale_exclude_min_desc =
     _("EFBs will only be scaled if above this value, or below the other value. EFBs in between "
@@ -387,13 +388,13 @@ static wxString shader_errors_desc =
 static wxString stereo_3d_desc =
     _("Select the stereoscopic 3D  mode, stereoscopy allows you to get a better feeling of depth "
       "if you have the necessary hardware.\nSide-by-Side and Top-and-Bottom are used by most 3D "
-      "TVs.\nAnaglyph is used for Red-Cyan colored glasses.\nHeavily decreases emulation speed and "
+      "TVs.\nAnaglyph is used for red/cyan colored glasses.\nHeavily decreases emulation speed and "
       "sometimes causes issues.\n\nIf unsure, select Off.");
 static wxString stereo_separation_desc =
     _("Control the separation distance, this is the distance between the virtual cameras.\nA "
       "higher value creates a stronger feeling of depth while a lower value is more comfortable.");
 static wxString stereo_convergence_desc = _(
-    "Control the convergence distance, this controls the apparant distance of virtual objects.\nA "
+    "Control the convergence distance, this controls the apparent distance of virtual objects.\nA "
     "higher value creates stronger out-of-screen effects while a lower value is more comfortable.");
 static wxString stereo_swap_desc =
     _("Swap the left and right eye, mostly useful if you want to view side-by-side "
@@ -405,7 +406,7 @@ static wxString Tessellation_desc =
     _("Apply the selected Tessellation levels to increase geometry detail.");
 static wxString Tessellation_forced_lights_desc = _("Force Lighting in all 3d elements.");
 static wxString Tessellation_early_culling_desc =
-    _("Remove surfaces outside the viewport before Tessellation to increase performance. Can cause "
+    _("Remove surfaces outside the viewport before Tessellation to improve performance. Can cause "
       "glitches if the camera is near a surface.");
 static wxString Tessellation_distance_desc =
     _("Decay of Tessellation level in the distance. High values reduce tesselation amounts "
@@ -420,11 +421,11 @@ static wxString Tessellation_displacement_desc =
     _("Select the intensity of the displacement effect when using custom materials.");
 static wxString scaling_factor_desc = _("Multiplier applied to the texture size.");
 static wxString texture_deposterize_desc =
-    _("Decrease some gradient's artifacts caused by scaling.");
+    _("Decrease some gradient artifacts caused by scaling.");
 static wxString stereoshader_desc =
-    _("Selects which shader will be used to transform the two images when stereoscopy is enabled.");
+    _("Select which shader will be used to transform the two images when stereoscopy is enabled.");
 static wxString forcedLogivOp_desc =
-    _("Force Logic blending support.\nBy default dx11/12 supports logic op blending only on UINT "
+    _("Force Logic blending support.\nBy default DX11/12 supports logic op blending only on UINT "
       "formats, but in some drivers UNORM is also supported but is not detectable.\nThis option "
       "will allow you to test if your driver really supports logic blending, but it will crash the "
       "emulator if enabled in a platform that does not support it.\n\nIf unsure, leave this "
@@ -453,19 +454,19 @@ static wxString ubershader_desc =
 static wxString filteringmode_desc = wxTRANSLATE(
     "Disabled: Filtering is disabled.\n\n"
     "Accurate: Try to respect native resolution filtering to avoid issues.\n\n"
-    "Normal: Apply filtering as configured by the game but with enchanged efb resolution as the "
+    "Normal: Apply filtering as configured by the game but with set EFB resolution as the "
     "target quality.\n\n"
     "Forced: Apply filtering even if the game has it disabled. Can cause issues in some games.");
 
 static wxString cullmode_desc = wxTRANSLATE(
-    "Native: Culling is applyed as configured by the game.\n\n"
+    "Native: Culling is applied as configured by the game.\n\n"
     "Disabled: Culling is disabled.\n\n"
-    "Disabled Except ALL: Disable culling exept in the case that the game completly discards "
+    "Disabled Except ALL: Disable culling except in the case that the game completely discards "
     "geometry.\n\n"
-    "Front No Blending: Apply front face culling when the game has no blending enabled.\n\n"
-    "Front: Apply front face culling.\n\n"
-    "Back No Blending: Apply back face culling when the game has no blending enabled.\n\n"
-    "Back: Apply back face culling.");
+    "Front No Blending: Apply front-face culling when the game has no blending enabled.\n\n"
+    "Front: Apply front-face culling.\n\n"
+    "Back No Blending: Apply back-face culling when the game has no blending enabled.\n\n"
+    "Back: Apply back-face culling.");
 
 VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string& title)
     : wxDialog(parent, wxID_ANY,
