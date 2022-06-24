@@ -30,6 +30,12 @@ extern "C" {
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/VideoConfig.h"
 
+#if LIBAVFORMAT_VERSION_MAJOR < 59
+#define FILENAME(s) s->filename
+#else
+#define FILENAME(s) s->url
+#endif
+
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 28, 1)
 #define AV_CODEC_FLAG_GLOBAL_HEADER CODEC_FLAG_GLOBAL_HEADER
 #define av_frame_alloc avcodec_alloc_frame
@@ -58,7 +64,9 @@ static void InitAVCodec()
   static bool first_run = true;
   if (first_run)
   {
+    #if (LIBAVFORMAT_VERSION_MAJOR < 59)
     av_register_all();
+    #endif
     avformat_network_init();
     first_run = false;
   }
@@ -130,8 +138,12 @@ bool AVIDump::CreateVideoFile()
 
   if (s_dump_path.empty())
     return false;
-
+  
+  #if (LIBAVFORMAT_VERSION_MAJOR < 59)
   AVOutputFormat* output_format = av_guess_format(s_format.c_str(), s_dump_path.c_str(), nullptr);
+  #else
+  const AVOutputFormat* output_format = av_guess_format(s_format.c_str(), s_dump_path.c_str(), nullptr);
+  #endif
   if (!output_format)
   {
     ERROR_LOG(VIDEO, "Invalid format %s", s_format.c_str());
@@ -213,15 +225,15 @@ bool AVIDump::CreateVideoFile()
     return false;
   }
 
-  NOTICE_LOG(VIDEO, "Opening file %s for dumping", s_format_context->filename);
-  if (avio_open(&s_format_context->pb, s_format_context->filename, AVIO_FLAG_WRITE) < 0 ||
+  NOTICE_LOG(VIDEO, "Opening file %s for dumping", FILENAME(s_format_context));
+  if (avio_open(&s_format_context->pb, FILENAME(s_format_context), AVIO_FLAG_WRITE) < 0 ||
     avformat_write_header(s_format_context, nullptr))
   {
-    ERROR_LOG(VIDEO, "Could not open %s", s_format_context->filename);
+    ERROR_LOG(VIDEO, "Could not open %s", FILENAME(s_format_context));
     return false;
   }
 
-  OSD::AddMessage(StringFromFormat("Dumping Frames to \"%s\" (%dx%d)", s_format_context->filename,
+  OSD::AddMessage(StringFromFormat("Dumping Frames to \"%s\" (%dx%d)", FILENAME(s_format_context),
     s_width, s_height));
 
   return true;
